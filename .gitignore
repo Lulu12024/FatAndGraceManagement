@@ -1,0 +1,18 @@
+logs/
+ENV 
+__pycache__ 
+db.sqlite3 
+.venv
+venv
+env
+.idea
+purchase_order_management.rar
+media/document
+media/Csv
+# media
+proprieties.json
+logs/django.log
+rh_management_system/proprieties.json
+statics
+statics/
+evaluation/__pycache__
