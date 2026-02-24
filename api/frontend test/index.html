@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Tester — Stock Management</title>
+  <meta name="description" content="Interface de test pour l'API de gestion de stock restaurant">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<!-- Toast Container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- ===== HEADER ===== -->
+<header class="app-header">
+  <div class="header-inner">
+    <div class="app-logo">
+      <span class="icon">⚡</span> API Tester
+    </div>
+    <div class="auth-bar">
+      <input type="text" id="loginInput" placeholder="Login" value="admin1">
+      <input type="password" id="passwordInput" placeholder="Mot de passe" value="password123">
+      <button class="btn btn-primary" id="loginBtn" onclick="Auth.login()">🔑 Connexion</button>
+      <button class="btn btn-danger btn-sm" id="logoutBtn" onclick="Auth.logout()" style="display:none;">Déconnexion</button>
+      <div class="token-indicator" id="tokenIndicator">
+        <span class="dot"></span>
+        <span id="tokenLabel">Non connecté</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ===== TAB NAVIGATION ===== -->
+<nav class="tab-nav" id="tabNav">
+  <button class="tab-btn active" data-tab="auth"          onclick="UI.switchTab('auth')">🔐 Auth</button>
+  <button class="tab-btn"        data-tab="users"         onclick="UI.switchTab('users')">👥 Utilisateurs</button>
+  <button class="tab-btn"        data-tab="tables"        onclick="UI.switchTab('tables')">🪑 Tables</button>
+  <button class="tab-btn"        data-tab="commandes"     onclick="UI.switchTab('commandes')">🍽️ Commandes</button>
+  <button class="tab-btn"        data-tab="invoices"      onclick="UI.switchTab('invoices')">🧾 Factures</button>
+  <button class="tab-btn"        data-tab="notifs"        onclick="UI.switchTab('notifs')">🔔 Notifs</button>
+  <button class="tab-btn"        data-tab="stocks"        onclick="UI.switchTab('stocks')">📦 Stocks</button>
+  <button class="tab-btn"        data-tab="audit"         onclick="UI.switchTab('audit')">📋 Audit</button>
+  <button class="tab-btn"        data-tab="reports"       onclick="UI.switchTab('reports')">📊 Rapports</button>
+</nav>
+
+<!-- ===== MAIN CONTENT ===== -->
+<main class="main-content">
+
+  <!-- ==================== AUTH TAB ==================== -->
+  <div class="tab-panel active" id="tab-auth">
+    <div class="grid-2">
+      <!-- Login -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🔑</span> Login</div>
+          <span class="endpoint-tag"><span class="method-badge method-post">POST</span> /api/auth/login/</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Login</label>
+          <input class="form-input" id="authLoginField" placeholder="votre_login">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Password</label>
+          <input class="form-input" id="authPasswordField" type="password" placeholder="votre_mot_de_passe">
+        </div>
+        <button class="btn btn-primary" onclick="AuthPanel.login()">Envoyer</button>
+        <div class="response-panel" style="margin-top:0.75rem">
+          <div class="response-header"><span>Réponse</span><span class="response-status" id="authLoginStatus"></span></div>
+          <div class="response-body" id="authLoginResponse">En attente...</div>
+        </div>
+      </div>
+
+      <!-- Me + Change password -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">👤</span> Mon Profil</div>
+          <span class="endpoint-tag"><span class="method-badge method-get">GET</span> /api/auth/me/</span>
+        </div>
+        <button class="btn btn-primary" onclick="AuthPanel.me()">Charger mon profil</button>
+        <div class="response-panel" style="margin-top:0.75rem">
+          <div class="response-header"><span>Réponse</span><span class="response-status" id="authMeStatus"></span></div>
+          <div class="response-body" id="authMeResponse">En attente...</div>
+        </div>
+
+        <div style="margin-top:1rem">
+          <div class="card-header">
+            <div class="card-title"><span class="icon">🔒</span> Changer mon MDP</div>
+            <span class="endpoint-tag"><span class="method-badge method-post">POST</span> /api/auth/change-password/</span>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Ancien MDP</label>
+              <input class="form-input" id="authOldPwd" type="password" placeholder="ancien">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Nouveau MDP</label>
+              <input class="form-input" id="authNewPwd" type="password" placeholder="nouveau">
+            </div>
+          </div>
+          <button class="btn btn-info btn-sm" onclick="AuthPanel.changePassword()">Changer</button>
+          <div class="response-panel" style="margin-top:0.5rem">
+            <div class="response-header"><span>Réponse</span><span class="response-status" id="authChangePwdStatus"></span></div>
+            <div class="response-body" id="authChangePwdResponse">En attente...</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== USERS TAB ==================== -->
+  <div class="tab-panel" id="tab-users">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">👥</span> Utilisateurs</div>
+        <div class="card-actions">
+          <button class="btn btn-primary btn-sm" onclick="Users.list()">📋 Lister</button>
+          <button class="btn btn-outline btn-sm" onclick="Users.listRoles()">Rôles</button>
+          <button class="btn btn-outline btn-sm" onclick="Users.listPermissions()">Permissions</button>
+        </div>
+      </div>
+
+      <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">📝 Créer / Modifier un utilisateur</h3>
+      <div class="collapsible-body">
+        <div class="form-group">
+          <label class="form-label">ID (laisser vide pour créer)</label>
+          <input class="form-input id-input" id="userId" placeholder="ID">
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Login</label>
+            <input class="form-input" id="userLogin" placeholder="login_utilisateur">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Prénom</label>
+            <input class="form-input" id="userFirstName" placeholder="Jean">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Nom</label>
+            <input class="form-input" id="userLastName" placeholder="Dupont">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Email</label>
+            <input class="form-input" id="userEmail" type="email" placeholder="jean@restaurant.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Rôle (ID)</label>
+            <input class="form-input" id="userRole" type="number" placeholder="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Sexe</label>
+            <select class="form-select" id="userSexe">
+              <option value="M">Masculin</option>
+              <option value="F">Féminin</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Mot de passe</label>
+            <input class="form-input" id="userPassword" type="password" placeholder="password123">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Confirmer MDP</label>
+            <input class="form-input" id="userPasswordConfirm" type="password" placeholder="password123">
+          </div>
+        </div>
+        <div class="card-actions" style="margin-top:0.5rem">
+          <button class="btn btn-success" onclick="Users.createOrUpdate()">💾 Enregistrer</button>
+          <button class="btn btn-danger btn-sm" onclick="Users.delete()">🗑️ Supprimer (ID ci-dessus)</button>
+        </div>
+      </div>
+
+      <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">⚡ Actions rapides</h3>
+      <div class="collapsible-body">
+        <div class="form-inline" style="margin-bottom:0.5rem">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">ID Utilisateur</label>
+            <input class="form-input id-input" id="userActionId" placeholder="ID">
+          </div>
+          <!-- toggle: POST /api/users/{id}/toggle/ -->
+          <button class="btn btn-success btn-sm" onclick="Users.toggle()">🔄 Toggle actif/inactif</button>
+        </div>
+        <div class="form-inline">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">ID Utilisateur</label>
+            <input class="form-input id-input" id="userResetId" placeholder="ID">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Nouveau MDP</label>
+            <input class="form-input" id="userResetPwd" type="password" placeholder="nouveau_mdp">
+          </div>
+          <!-- reset-password: POST /api/users/{id}/reset-password/ -->
+          <button class="btn btn-warning btn-sm" onclick="Users.resetPassword()">🔑 Reset MDP</button>
+        </div>
+      </div>
+
+      <div class="response-panel" style="margin-top:0.75rem">
+        <div class="response-header"><span>Réponse</span><span class="response-status" id="usersStatus"></span></div>
+        <div class="response-body" id="usersResponse">En attente...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TABLES TAB ==================== -->
+  <div class="tab-panel" id="tab-tables">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">🪑</span> Tables</div>
+        <div class="card-actions">
+          <button class="btn btn-primary btn-sm" onclick="Tables.list()">📋 Lister</button>
+        </div>
+      </div>
+
+      <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">📝 Créer / Modifier une table</h3>
+      <div class="collapsible-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">ID (vide = créer)</label>
+            <input class="form-input id-input" id="tableId" placeholder="ID">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Numéro</label>
+            <input class="form-input" id="tableNumero" placeholder="T-01">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Capacité</label>
+            <input class="form-input" id="tableCapacite" type="number" placeholder="4">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Description</label>
+          <input class="form-input" id="tableDescription" placeholder="Terrasse, Fenêtre...">
+        </div>
+        <div class="card-actions">
+          <button class="btn btn-success btn-sm" onclick="Tables.saveTable()">💾 Enregistrer</button>
+          <button class="btn btn-danger btn-sm" onclick="Tables.deleteTable()">🗑️ Supprimer</button>
+        </div>
+      </div>
+
+      <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">⚡ Actions</h3>
+      <div class="collapsible-body">
+        <div class="form-inline" style="margin-bottom:0.5rem">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">ID Table</label>
+            <input class="form-input id-input" id="tableActionId" placeholder="ID">
+          </div>
+          <!-- POST /api/tables/{id}/reserve/ -->
+          <button class="btn btn-success btn-sm" onclick="Tables.action('reserve')">✅ Réserver</button>
+          <!-- POST /api/tables/{id}/cancel/ -->
+          <button class="btn btn-warning btn-sm" onclick="Tables.action('cancel')">↩️ Libérer</button>
+          <!-- POST /api/tables/{id}/close/ -->
+          <button class="btn btn-info btn-sm" onclick="Tables.action('close')">🔒 Fermer</button>
+        </div>
+        <div class="form-inline" style="margin-top:0.5rem">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">ID Table (paiement)</label>
+            <input class="form-input id-input" id="tablePayId" placeholder="ID">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Mode paiement</label>
+            <select class="form-select" id="tablePayMode">
+              <option value="ESPECES">Espèces</option>
+              <option value="CARTE">Carte</option>
+              <option value="MOBILE">Mobile</option>
+            </select>
+          </div>
+          <!-- POST /api/tables/{id}/pay/ -->
+          <button class="btn btn-primary btn-sm" onclick="Tables.pay()">💳 Payer</button>
+        </div>
+      </div>
+
+      <div class="response-panel" style="margin-top:0.75rem">
+        <div class="response-header"><span>Réponse Tables</span><span class="response-status" id="tablesStatus"></span></div>
+        <div class="response-body" id="tablesResponse">En attente...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== COMMANDES TAB ==================== -->
+  <div class="tab-panel" id="tab-commandes">
+    <div class="grid-2">
+      <!-- Plats -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🍕</span> Plats</div>
+          <div class="card-actions">
+            <button class="btn btn-primary btn-sm" onclick="Plats.list()">📋 Lister</button>
+          </div>
+        </div>
+        <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">📝 Créer / Modifier</h3>
+        <div class="collapsible-body">
+          <div class="form-group">
+            <label class="form-label">ID (vide = créer)</label>
+            <input class="form-input id-input" id="platId" placeholder="ID">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nom</label>
+              <input class="form-input" id="platNom" placeholder="Pizza Margherita">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Prix</label>
+              <input class="form-input" id="platPrix" type="number" step="0.01" placeholder="12.50">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Catégorie</label>
+              <input class="form-input" id="platCategorie" placeholder="Pizzas">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Disponible</label>
+              <select class="form-select" id="platDisponible">
+                <option value="true">Oui</option>
+                <option value="false">Non</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea class="form-textarea" id="platDescription" placeholder="Description du plat..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">URL Image</label>
+            <input class="form-input" id="platImageUrl" placeholder="https://...">
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-success btn-sm" onclick="Plats.save()">💾 Enregistrer</button>
+            <button class="btn btn-danger btn-sm" onclick="Plats.delete()">🗑️ Supprimer</button>
+          </div>
+        </div>
+        <div class="response-panel" style="margin-top:0.75rem">
+          <div class="response-header"><span>Réponse Plats</span><span class="response-status" id="platsStatus"></span></div>
+          <div class="response-body" id="platsResponse">En attente...</div>
+        </div>
+      </div>
+
+      <!-- Orders list + create -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🍽️</span> Commandes</div>
+          <div class="card-actions">
+            <button class="btn btn-primary btn-sm" onclick="Orders.list()">📋 Lister</button>
+          </div>
+        </div>
+        <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">📝 Créer une commande</h3>
+        <div class="collapsible-body">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Table (ID)</label>
+              <input class="form-input" id="cmdTable" type="number" placeholder="1">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Serveur (ID)</label>
+              <input class="form-input" id="cmdServeur" type="number" placeholder="2">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Observations</label>
+            <textarea class="form-textarea" id="cmdObservations" placeholder="Notes spéciales..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Items (JSON: [{"plat_id": 1, "quantite": 2}])</label>
+            <textarea class="form-textarea" id="cmdPlats" placeholder='[{"plat_id": 1, "quantite": 2}]'></textarea>
+          </div>
+          <button class="btn btn-success" onclick="Orders.create()">💾 Créer la commande</button>
+        </div>
+        <div class="response-panel" style="margin-top:0.75rem">
+          <div class="response-header"><span>Réponse</span><span class="response-status" id="ordersListStatus"></span></div>
+          <div class="response-body" id="ordersListResponse">En attente...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Order Workflow Actions -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">⚡</span> Workflow Commandes</div>
+      </div>
+
+      <div class="form-inline" style="margin-bottom:0.5rem">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">ID Commande</label>
+          <input class="form-input id-input" id="cmdActionId" placeholder="ID">
+        </div>
+        <!-- POST /api/orders/{id}/accept/ -->
+        <button class="btn btn-success btn-sm" onclick="Orders.action('accept')">✅ Accepter</button>
+        <!-- POST /api/orders/{id}/ready/ -->
+        <button class="btn btn-info btn-sm" onclick="Orders.action('ready')">🍳 Prête</button>
+        <!-- POST /api/orders/{id}/deliver/ -->
+        <button class="btn btn-primary btn-sm" onclick="Orders.action('deliver')">🚀 Livrer</button>
+        <!-- POST /api/orders/{id}/reject/ -->
+        <button class="btn btn-warning btn-sm" onclick="Orders.showRejectForm()">❌ Rejeter</button>
+        <!-- POST /api/orders/{id}/cancel/ -->
+        <button class="btn btn-danger btn-sm" onclick="Orders.showCancelForm()">🚫 Annuler</button>
+      </div>
+
+      <div id="cmdRejectForm" style="display:none" class="form-inline" style="margin-top:0.5rem">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Motif de rejet</label>
+          <input class="form-input" id="cmdMotifRejet" placeholder="Raison...">
+        </div>
+        <button class="btn btn-warning btn-sm" onclick="Orders.reject()">Confirmer rejet</button>
+      </div>
+      <div id="cmdCancelForm" style="display:none" class="form-inline" style="margin-top:0.5rem">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">Motif d'annulation</label>
+          <input class="form-input" id="cmdMotifAnnulation" placeholder="Raison...">
+        </div>
+        <button class="btn btn-danger btn-sm" onclick="Orders.cancel()">Confirmer annulation</button>
+      </div>
+
+      <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">🔍 Filtres</h3>
+      <div class="collapsible-body">
+        <div class="form-inline">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Statut</label>
+            <select class="form-select" id="cmdFilterStatut">
+              <option value="">Tous</option>
+              <option value="EN_ATTENTE_ACCEPTATION">En attente</option>
+              <option value="EN_PREPARATION">En préparation</option>
+              <option value="PRETE">Prête</option>
+              <option value="LIVREE">Livrée</option>
+              <option value="ANNULEE">Annulée</option>
+              <option value="REFUSEE">Refusée</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Serveur (ID)</label>
+            <input class="form-input id-input" id="cmdFilterServeur" placeholder="">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="Orders.listFiltered()">🔍 Filtrer</button>
+        </div>
+      </div>
+
+      <div class="response-panel" style="margin-top:0.75rem">
+        <div class="response-header"><span>Réponse Workflow</span><span class="response-status" id="commandesStatus"></span></div>
+        <div class="response-body" id="commandesResponse">En attente...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== INVOICES TAB ==================== -->
+  <div class="tab-panel" id="tab-invoices">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">🧾</span> Factures</div>
+        <div class="card-actions">
+          <button class="btn btn-primary btn-sm" onclick="Invoices.list()">📋 Lister</button>
+        </div>
+      </div>
+
+      <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">🔍 Filtres</h3>
+      <div class="collapsible-body">
+        <div class="form-inline">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Table (ID)</label>
+            <input class="form-input id-input" id="invFilterTable" placeholder="">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Date début</label>
+            <input class="form-input" id="invFilterDateDebut" type="date">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Date fin</label>
+            <input class="form-input" id="invFilterDateFin" type="date">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="Invoices.listFiltered()">🔍 Filtrer</button>
+        </div>
+      </div>
+
+      <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">⚡ Actions</h3>
+      <div class="collapsible-body">
+        <div class="form-inline" style="margin-bottom:0.5rem">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">ID Facture</label>
+            <input class="form-input id-input" id="invActionId" placeholder="ID">
+          </div>
+          <!-- GET /api/invoices/{id}/ -->
+          <button class="btn btn-outline btn-sm" onclick="Invoices.detail()">🔍 Détail</button>
+          <!-- GET /api/invoices/{id}/pdf/ -->
+          <button class="btn btn-info btn-sm" onclick="Invoices.pdf()">📄 PDF</button>
+          <!-- POST /api/invoices/{id}/reprint/ -->
+          <button class="btn btn-warning btn-sm" onclick="Invoices.reprint()">🖨️ Réimprimer</button>
+        </div>
+      </div>
+
+      <div class="response-panel" style="margin-top:0.75rem">
+        <div class="response-header"><span>Réponse Factures</span><span class="response-status" id="invoicesStatus"></span></div>
+        <div class="response-body" id="invoicesResponse">En attente...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== NOTIFICATIONS TAB ==================== -->
+  <div class="tab-panel" id="tab-notifs">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">🔔</span> Notifications</div>
+        <div class="card-actions">
+          <!-- GET /api/notifications/ -->
+          <button class="btn btn-primary btn-sm" onclick="Notifs.list()">📋 Non lues</button>
+          <!-- POST /api/notifications/read-all/ -->
+          <button class="btn btn-outline btn-sm" onclick="Notifs.readAll()">✅ Tout marquer lu</button>
+        </div>
+      </div>
+
+      <div class="form-inline" style="margin-top:0.75rem">
+        <div class="form-group" style="margin:0">
+          <label class="form-label">ID Notification</label>
+          <input class="form-input id-input" id="notifActionId" placeholder="ID">
+        </div>
+        <!-- POST /api/notifications/{id}/read/ -->
+        <button class="btn btn-success btn-sm" onclick="Notifs.markRead()">✅ Marquer comme lue</button>
+      </div>
+
+      <div class="response-panel" style="margin-top:0.75rem">
+        <div class="response-header"><span>Réponse</span><span class="response-status" id="notifsStatus"></span></div>
+        <div class="response-body" id="notifsResponse">En attente...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== STOCKS TAB ==================== -->
+  <div class="tab-panel" id="tab-stocks">
+    <div class="grid-2">
+      <!-- Produits -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🥕</span> Produits</div>
+          <div class="card-actions">
+            <button class="btn btn-primary btn-sm" onclick="Stocks.listProduits()">📋 Lister</button>
+            <button class="btn btn-outline btn-sm" onclick="Stocks.listCategories()">Catégories</button>
+            <button class="btn btn-outline btn-sm" onclick="Stocks.listUnites()">Unités</button>
+          </div>
+        </div>
+        <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">📝 Créer / Modifier</h3>
+        <div class="collapsible-body">
+          <div class="form-group">
+            <label class="form-label">ID (vide = créer)</label>
+            <input class="form-input id-input" id="produitId" placeholder="ID">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Nom</label>
+              <input class="form-input" id="produitNom" placeholder="Tomates">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Catégorie</label>
+              <input class="form-input" id="produitCategorie" placeholder="Légumes">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Seuil d'alerte</label>
+              <input class="form-input" id="produitSeuil" type="number" step="0.01" placeholder="10">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Unité (ID)</label>
+              <input class="form-input" id="produitUnite" type="number" placeholder="1">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Qté initiale</label>
+              <input class="form-input" id="produitQteInitiale" type="number" step="0.01" placeholder="0">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Date de péremption</label>
+            <input class="form-input" id="produitPeremption" type="date">
+          </div>
+          <div class="card-actions">
+            <button class="btn btn-success btn-sm" onclick="Stocks.saveProduit()">💾 Enregistrer</button>
+            <button class="btn btn-danger btn-sm" onclick="Stocks.deleteProduit()">🗑️ Supprimer</button>
+          </div>
+        </div>
+        <div class="response-panel" style="margin-top:0.75rem">
+          <div class="response-header"><span>Réponse Produits</span><span class="response-status" id="produitsStatus"></span></div>
+          <div class="response-body" id="produitsResponse">En attente...</div>
+        </div>
+      </div>
+
+      <!-- État des Stocks -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">📊</span> État des Stocks</div>
+          <div class="card-actions">
+            <button class="btn btn-primary btn-sm" onclick="Stocks.listStocks()">📋 Lister</button>
+          </div>
+        </div>
+        <div class="response-panel" style="margin-top:0.75rem">
+          <div class="response-header"><span>Réponse Stocks</span><span class="response-status" id="stocksStatus"></span></div>
+          <div class="response-body" id="stocksResponse">En attente...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mouvements -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">🔄</span> Mouvements de Stock</div>
+        <button class="btn btn-primary btn-sm" onclick="Stocks.listMouvements()">📋 Lister</button>
+      </div>
+
+      <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">📝 Créer un mouvement</h3>
+      <div class="collapsible-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Type (ID)</label>
+            <input class="form-input" id="mvtType" type="number" placeholder="1 = Entrée">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Produit (ID)</label>
+            <input class="form-input" id="mvtProduit" type="number" placeholder="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Quantité</label>
+            <input class="form-input" id="mvtQuantite" type="number" step="0.01" placeholder="50">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Fournisseur</label>
+            <input class="form-input" id="mvtFournisseur" placeholder="Fournisseur XYZ">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Justification</label>
+          <textarea class="form-textarea" id="mvtJustification" placeholder="Livraison fournisseur..."></textarea>
+        </div>
+        <button class="btn btn-success" onclick="Stocks.createMouvement()">💾 Créer mouvement</button>
+      </div>
+
+      <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">⚡ Actions Workflow</h3>
+      <div class="collapsible-body">
+        <div class="form-inline" style="margin-bottom:0.5rem">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">ID Mouvement</label>
+            <input class="form-input id-input" id="mvtActionId" placeholder="ID">
+          </div>
+          <!-- POST /api/movements/{id}/validate/ -->
+          <button class="btn btn-success btn-sm" onclick="Stocks.mvtAction('validate')">✅ Valider</button>
+          <!-- POST /api/movements/{id}/reject/ -->
+          <button class="btn btn-warning btn-sm" onclick="Stocks.showMvtRejectForm()">❌ Rejeter</button>
+        </div>
+        <div id="mvtRejectForm" style="display:none" class="form-inline">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Motif de rejet</label>
+            <input class="form-input" id="mvtMotifRejet" placeholder="Raison...">
+          </div>
+          <button class="btn btn-warning btn-sm" onclick="Stocks.mvtReject()">Confirmer rejet</button>
+        </div>
+      </div>
+
+      <div class="response-panel" style="margin-top:0.75rem">
+        <div class="response-header"><span>Réponse Mouvements</span><span class="response-status" id="mouvementsStatus"></span></div>
+        <div class="response-body" id="mouvementsResponse">En attente...</div>
+      </div>
+    </div>
+
+    <!-- Demandes de produit -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">📋</span> Demandes de Produit</div>
+        <button class="btn btn-primary btn-sm" onclick="Stocks.listDemandes()">📋 Lister</button>
+      </div>
+
+      <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">📝 Créer une demande</h3>
+      <div class="collapsible-body">
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Produit (ID)</label>
+            <input class="form-input" id="demProduit" type="number" placeholder="1">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Quantité</label>
+            <input class="form-input" id="demQuantite" type="number" step="0.01" placeholder="5">
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Justification</label>
+          <textarea class="form-textarea" id="demJustification" placeholder="Préparation du plat du jour..."></textarea>
+        </div>
+        <button class="btn btn-success" onclick="Stocks.createDemande()">💾 Créer demande</button>
+      </div>
+
+      <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">⚡ Actions Workflow</h3>
+      <div class="collapsible-body">
+        <div class="form-inline" style="margin-bottom:0.5rem">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">ID Demande</label>
+            <input class="form-input id-input" id="demActionId" placeholder="ID">
+          </div>
+          <!-- POST /api/demandes/{id}/validate/ -->
+          <button class="btn btn-success btn-sm" onclick="Stocks.demAction('validate')">✅ Valider</button>
+          <!-- POST /api/demandes/{id}/reject/ -->
+          <button class="btn btn-warning btn-sm" onclick="Stocks.showDemRejectForm()">❌ Rejeter</button>
+        </div>
+        <div id="demRejectForm" style="display:none" class="form-inline">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Motif de rejet</label>
+            <input class="form-input" id="demMotifRejet" placeholder="Raison...">
+          </div>
+          <button class="btn btn-warning btn-sm" onclick="Stocks.demReject()">Confirmer rejet</button>
+        </div>
+      </div>
+
+      <div class="response-panel" style="margin-top:0.75rem">
+        <div class="response-header"><span>Réponse Demandes</span><span class="response-status" id="demandesStatus"></span></div>
+        <div class="response-body" id="demandesResponse">En attente...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== AUDIT TAB ==================== -->
+  <div class="tab-panel" id="tab-audit">
+    <div class="card">
+      <div class="card-header">
+        <div class="card-title"><span class="icon">📋</span> Logs d'Audit</div>
+        <div class="card-actions">
+          <button class="btn btn-primary btn-sm" onclick="Audit.listLogs()">📋 Lister</button>
+        </div>
+      </div>
+
+      <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">🔍 Filtres</h3>
+      <div class="collapsible-body">
+        <div class="form-inline">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Utilisateur (ID)</label>
+            <input class="form-input id-input" id="logFilterUser" placeholder="">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Action</label>
+            <select class="form-select" id="logFilterAction">
+              <option value="">Toutes</option>
+              <option value="CREATE">CREATE</option>
+              <option value="UPDATE">UPDATE</option>
+              <option value="DELETE">DELETE</option>
+              <option value="LOGIN">LOGIN</option>
+              <option value="LOGOUT">LOGOUT</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Table</label>
+            <input class="form-input" id="logFilterTable" placeholder="commandes_commande">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Date début</label>
+            <input class="form-input" id="logFilterDateFrom" type="date">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Date fin</label>
+            <input class="form-input" id="logFilterDateTo" type="date">
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="Audit.listLogsFiltered()">🔍 Filtrer</button>
+        </div>
+      </div>
+
+      <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">📤 Exporter</h3>
+      <div class="collapsible-body">
+        <div class="form-inline">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Format</label>
+            <select class="form-select" id="exportFormat">
+              <option value="csv">CSV</option>
+              <option value="excel">Excel</option>
+            </select>
+          </div>
+          <!-- GET /api/audit-logs/export/?format=csv -->
+          <button class="btn btn-info btn-sm" onclick="Audit.exportLogs()">📤 Exporter</button>
+        </div>
+      </div>
+
+      <div class="response-panel" style="margin-top:0.75rem">
+        <div class="response-header"><span>Réponse Logs</span><span class="response-status" id="logsStatus"></span></div>
+        <div class="response-body" id="logsResponse">En attente...</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== REPORTS TAB ==================== -->
+  <div class="tab-panel" id="tab-reports">
+    <div class="grid-2">
+      <!-- Dashboard -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🏠</span> Dashboard</div>
+          <span class="endpoint-tag"><span class="method-badge method-get">GET</span> /api/reports/dashboard/</span>
+        </div>
+        <button class="btn btn-primary" onclick="Reports.dashboard()">Charger Dashboard</button>
+        <div class="response-panel" style="margin-top:0.75rem">
+          <div class="response-header"><span>Réponse</span><span class="response-status" id="dashboardStatus"></span></div>
+          <div class="response-body" id="dashboardResponse">En attente...</div>
+        </div>
+      </div>
+
+      <!-- KPI -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">📈</span> KPIs Gestion</div>
+          <span class="endpoint-tag"><span class="method-badge method-get">GET</span> /api/reports/kpi/</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Période (jours)</label>
+          <input class="form-input id-input" id="kpiPeriod" type="number" placeholder="30" value="30">
+        </div>
+        <button class="btn btn-primary" onclick="Reports.kpi()">Charger KPIs</button>
+        <div class="response-panel" style="margin-top:0.75rem">
+          <div class="response-header"><span>Réponse</span><span class="response-status" id="kpiStatus"></span></div>
+          <div class="response-body" id="kpiResponse">En attente...</div>
+        </div>
+      </div>
+
+      <!-- Orders Stats -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">🍽️</span> Stats Commandes</div>
+          <span class="endpoint-tag"><span class="method-badge method-get">GET</span> /api/reports/orders/</span>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Période (jours)</label>
+          <input class="form-input id-input" id="orderStatsPeriod" type="number" placeholder="7" value="7">
+        </div>
+        <button class="btn btn-primary" onclick="Reports.orders()">Charger Stats</button>
+        <div class="response-panel" style="margin-top:0.75rem">
+          <div class="response-header"><span>Réponse</span><span class="response-status" id="ordersStatsStatus"></span></div>
+          <div class="response-body" id="ordersStatsResponse">En attente...</div>
+        </div>
+      </div>
+
+      <!-- Stock Stats -->
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title"><span class="icon">📦</span> Stats Stock</div>
+          <span class="endpoint-tag"><span class="method-badge method-get">GET</span> /api/reports/stock/</span>
+        </div>
+        <button class="btn btn-primary" onclick="Reports.stock()">Charger Stats Stock</button>
+        <div class="response-panel" style="margin-top:0.75rem">
+          <div class="response-header"><span>Réponse</span><span class="response-status" id="stockStatsStatus"></span></div>
+          <div class="response-body" id="stockStatsResponse">En attente...</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
