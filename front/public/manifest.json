@@ -1,0 +1,15 @@
+{
+  "short_name": "F&G Gestion",
+  "name": "FATE & GRÂCE — Plateforme de Gestion Restaurant",
+  "description": "Gestion des commandes et des stocks — FATE & GRÂCE Bakery · Restaurant · Bar",
+  "icons": [
+    { "src": "favicon.ico", "sizes": "64x64 32x32 24x24 16x16", "type": "image/x-icon" }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#C9A84C",
+  "background_color": "#07060A",
+  "orientation": "any",
+  "lang": "fr",
+  "categories": ["business", "productivity"]
+}

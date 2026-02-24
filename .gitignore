@@ -16,3 +16,5 @@ rh_management_system/proprieties.json
 statics
 statics/
 evaluation/__pycache__
+node_modules
+dist
