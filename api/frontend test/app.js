@@ -3,7 +3,7 @@
 //  Fully updated for restructured flat /api/ endpoints
 // ============================================================
 
-const BASE_URL = 'http://localhost:8002/api';
+const BASE_URL = 'http://localhost:8000/api';
 
 // ======================== API SERVICE ========================
 const Api = {
