@@ -6,7 +6,7 @@
  * GET    /api/invoices/{id}/pdf/    → PDF (download)
  * POST   /api/invoices/{id}/reprint/ → 200
  */
-import { api, downloadFile } from "./client";
+import { api, downloadFile, unwrap } from "./client";
 import { MOCK_INVOICES } from "../mock";
 
 export const invoicesService = {
@@ -15,7 +15,8 @@ export const invoicesService = {
       const qs = new URLSearchParams(
         Object.fromEntries(Object.entries(params).filter(([, v]) => v))
       ).toString();
-      return await api.get(`/invoices/${qs ? "?" + qs : ""}`);
+      const data = await api.get(`/invoices/${qs ? "?" + qs : ""}`);
+      return unwrap(data);
     } catch (err) {
       if (err.isNetwork) return [...MOCK_INVOICES];
       throw err;
@@ -56,7 +57,8 @@ import { MOCK_USERS } from "../mock";
 export const usersService = {
   async list() {
     try {
-      return await api.get("/users/");
+      const data = await api.get("/users/");
+      return unwrap(data);
     } catch (err) {
       if (err.isNetwork) return [...MOCK_USERS];
       throw err;
@@ -123,7 +125,8 @@ export const auditService = {
       const qs = new URLSearchParams(
         Object.fromEntries(Object.entries(params).filter(([, v]) => v))
       ).toString();
-      return await api.get(`/audit-logs/${qs ? "?" + qs : ""}`);
+      const data = await api.get(`/audit-logs/${qs ? "?" + qs : ""}`);
+      return unwrap(data);
     } catch (err) {
       if (err.isNetwork) return [...MOCK_AUDIT];
       throw err;
@@ -155,7 +158,7 @@ export const reportsService = {
     try {
       return await api.get("/reports/dashboard/");
     } catch (err) {
-      if (err.isNetwork) return null; // Caller uses local state
+      if (err.isNetwork) return null;
       throw err;
     }
   },
@@ -208,7 +211,8 @@ export const reportsService = {
 export const notificationsService = {
   async list() {
     try {
-      return await api.get("/notifications/");
+      const data = await api.get("/notifications/");
+      return unwrap(data);
     } catch (err) {
       if (err.isNetwork) return [];
       throw err;

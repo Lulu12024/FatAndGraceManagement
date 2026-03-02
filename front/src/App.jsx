@@ -1468,7 +1468,10 @@ const InvoicesScreen = ({ toast }) => {
 
   useEffect(() => {
     setLoading(true);
-    invoicesService.list().then(data => { if(data) setInvoices(data); }).catch(()=>{}).finally(()=>setLoading(false));
+    invoicesService.list()
+      .then(data => { if(data) setInvoices(Array.isArray(data) ? data : (data.results ?? [])); })
+      .catch(()=>{})
+      .finally(()=>setLoading(false));
   }, []);
 
   const filtered = invoices.filter(inv => inv.id.toLowerCase().includes(search.toLowerCase()) || inv.tableNum.includes(search));
@@ -1612,7 +1615,9 @@ const TeamScreen = ({ role, toast }) => {
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
-    usersService.list().then(data => { if(data) setUsers(data); }).catch(()=>{});
+    usersService.list()
+      .then(data => { if(data) setUsers(Array.isArray(data) ? data : (data.results ?? [])); })
+      .catch(()=>{});
   }, []);
 
   const addUser = async () => {
@@ -1953,10 +1958,10 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     Promise.all([
-      tablesService.list().then(d => { if(d) setTables(d); }),
-      ordersService.list().then(d  => { if(d) setOrders(d); }),
-      productsService.list().then(d => { if(d) setProducts(d); }),
-      movementsService.list().then(d => { if(d) setMovements(d); }),
+      tablesService.list().then(d   => { if(d) setTables(d.results    ?? d); }),
+      ordersService.list().then(d   => { if(d) setOrders(d.results    ?? d); }),
+      productsService.list().then(d => { if(d) setProducts(d.results  ?? d); }),
+      movementsService.list().then(d => { if(d) setMovements(d.results ?? d); }),
     ]).catch(() => {
       // Mock data already set — graceful degradation
     });

@@ -116,3 +116,12 @@ export async function downloadFile(path, filename) {
   a.click();
   URL.revokeObjectURL(url);
 }
+
+/* ─── Pagination unwrap ─────────────────────────────── */
+// Django REST Framework retourne { count, next, previous, results: [...] }
+// Cette fonction extrait le tableau automatiquement
+export const unwrap = (data) => {
+  if (data && Array.isArray(data.results)) return data.results;
+  if (Array.isArray(data)) return data;
+  return [];
+};
