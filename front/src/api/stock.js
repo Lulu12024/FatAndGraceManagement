@@ -23,7 +23,7 @@
  * statut  : EN_ATTENTE | VALIDÉE | REJETÉE
  */
 
-import { api } from "./client";
+import { api, unwrap } from "./client";
 import { MOCK_PRODUCTS, MOCK_MOVEMENTS } from "../mock";
 
 /* ═══ PRODUCTS ══════════════════════════════════════════ */
@@ -33,7 +33,8 @@ export const productsService = {
       const qs = new URLSearchParams(
         Object.fromEntries(Object.entries(params).filter(([, v]) => v))
       ).toString();
-      return await api.get(`/products/${qs ? "?" + qs : ""}`);
+      const data = await api.get(`/products/${qs ? "?" + qs : ""}`);
+      return unwrap(data);
     } catch (err) {
       if (err.isNetwork) {
         let result = [...MOCK_PRODUCTS];
@@ -77,7 +78,8 @@ export const productsService = {
   /** Catégories distinctes */
   async categories() {
     try {
-      return await api.get("/products/categories/");
+      const data = await api.get("/products/categories/");
+      return unwrap(data);
     } catch (err) {
       if (err.isNetwork) {
         return [...new Set(MOCK_PRODUCTS.map((p) => p.categorie))];
@@ -94,7 +96,8 @@ export const movementsService = {
       const qs = new URLSearchParams(
         Object.fromEntries(Object.entries(params).filter(([, v]) => v))
       ).toString();
-      return await api.get(`/movements/${qs ? "?" + qs : ""}`);
+      const data = await api.get(`/movements/${qs ? "?" + qs : ""}`);
+      return unwrap(data);
     } catch (err) {
       if (err.isNetwork) {
         let result = [...MOCK_MOVEMENTS];

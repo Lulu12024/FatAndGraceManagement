@@ -22,7 +22,7 @@
  *   EN_ATTENTE_LIVRAISON | LIVRÉE | ANNULÉE | REFUSÉE
  */
 
-import { api } from "./client";
+import { api, unwrap } from "./client";
 import { MOCK_ORDERS } from "../mock";
 
 export const ordersService = {
@@ -31,7 +31,8 @@ export const ordersService = {
       const qs = new URLSearchParams(
         Object.fromEntries(Object.entries(params).filter(([, v]) => v != null))
       ).toString();
-      return await api.get(`/orders/${qs ? "?" + qs : ""}`);
+      const data = await api.get(`/orders/${qs ? "?" + qs : ""}`);
+      return unwrap(data);
     } catch (err) {
       if (err.isNetwork) {
         let result = [...MOCK_ORDERS];

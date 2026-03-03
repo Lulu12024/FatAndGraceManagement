@@ -21,7 +21,8 @@ export const authService = {
   async login(login, password) {
     try {
       const data = await api.post("/auth/login/", { login, password });
-      setToken(data.token);
+      setToken(data.access);
+      localStorage.setItem("fg_refresh_token", data.refresh);
       return data; // { token, user }
     } catch (err) {
       if (err.isNetwork) {
@@ -39,12 +40,13 @@ export const authService = {
    * Déconnexion (invalide le token côté serveur)
    */
   async logout() {
+    const refresh = localStorage.getItem("fg_refresh_token");
     try {
-      await api.post("/auth/logout/", {});
-    } catch (_) {
-      // On déconnecte localement même si le serveur est off
-    } finally {
+      await api.post("/auth/logout/", { refresh });
+    } catch (_) {}
+    finally {
       clearToken();
+      localStorage.removeItem("fg_refresh_token");
     }
   },
 

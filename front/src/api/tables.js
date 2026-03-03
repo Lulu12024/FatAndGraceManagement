@@ -16,13 +16,14 @@
  *   DISPONIBLE | RÉSERVÉE | COMMANDES_PASSÉE | EN_SERVICE | EN_ATTENTE_PAIEMENT | PAYÉE
  */
 
-import { api } from "./client";
+import { api, unwrap } from "./client";
 import { MOCK_TABLES } from "../mock";
 
 export const tablesService = {
   async list() {
     try {
-      return await api.get("/tables/");
+      const data = await api.get("/tables/");
+      return unwrap(data);
     } catch (err) {
       if (err.isNetwork) return [...MOCK_TABLES];
       throw err;
