@@ -14,7 +14,7 @@ import { ordersService } from "./api/orders";
 import { productsService, movementsService } from "./api/stock";
 import { invoicesService, usersService, auditService, reportsService, notificationsService } from "./api/services";
 import { MOCK_TABLES, MOCK_ORDERS, MOCK_PRODUCTS, MOCK_MOVEMENTS, MOCK_INVOICES, MOCK_AUDIT, MOCK_USERS, MOCK_PLATS, ROLES } from "./mock";
-
+import { unwrap } from "./api/client";
 /* ══════════════════════════════════════════════════════════
    SHARED MICRO-COMPONENTS
    ══════════════════════════════════════════════════════════ */
@@ -1469,7 +1469,7 @@ const InvoicesScreen = ({ toast }) => {
   useEffect(() => {
     setLoading(true);
     invoicesService.list()
-      .then(data => { if(data) setInvoices(Array.isArray(data) ? data : (data.results ?? [])); })
+      .then(data => { if(data) setInvoices(unwrap(data) ? data : (data.results ?? [])); })
       .catch(()=>{})
       .finally(()=>setLoading(false));
   }, []);
@@ -1616,7 +1616,7 @@ const TeamScreen = ({ role, toast }) => {
 
   useEffect(() => {
     usersService.list()
-      .then(data => { if(data) setUsers(Array.isArray(data) ? data : (data.results ?? [])); })
+      .then(data => { if(data) setUsers(unwrap(Array.isArray(data)) ? data : (data.results ?? [])); })
       .catch(()=>{});
   }, []);
 
@@ -1641,11 +1641,11 @@ const TeamScreen = ({ role, toast }) => {
 
   return (
     <div style={{ padding:28, overflowY:"auto", flex:1 }}>
-      {["admin","manager"].includes(role) && (
+      {/* {["admin","administrateur" ,"manager"].includes(role) && ( */}
         <div style={{ display:"flex", justifyContent:"flex-end", marginBottom:20 }}>
           <Btn onClick={()=>setShowAdd(true)}>+ Ajouter un utilisateur</Btn>
         </div>
-      )}
+      {/* )} */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(280px,1fr))", gap:12 }}>
         {users.map((u,i) => {
           const color = ROLE_COLORS[u.role] || C.gold;
@@ -1665,7 +1665,7 @@ const TeamScreen = ({ role, toast }) => {
                 </div>
                 <div style={{ display:"flex", flexDirection:"column", alignItems:"flex-end", gap:6 }}>
                   <Dot color={u.isActive?C.success:C.danger}/>
-                  {["admin","manager"].includes(role) && (
+                  {["admin","administrateur" ,"manager"].includes(role) && (
                     <button onClick={()=>toggleUser(u.id)} style={{ background:"none",border:"none",color:C.muted,fontSize:11,cursor:"pointer",transition:"color .2s" }} className="hover-gold">
                       {u.isActive?"Désactiver":"Activer"}
                     </button>
@@ -1709,7 +1709,7 @@ const AuditScreen = ({ toast }) => {
 
   useEffect(() => {
     setLoading(true);
-    auditService.list().then(data => { if(data) setLogs(data); }).catch(()=>{}).finally(()=>setLoading(false));
+    auditService.list().then(data => { if(data) setLogs(unwrap(data)); }).catch(()=>{}).finally(()=>setLoading(false));
   }, []);
 
   const doExport = async (format) => {
@@ -1958,10 +1958,10 @@ export default function App() {
   useEffect(() => {
     if (!user) return;
     Promise.all([
-      tablesService.list().then(d   => { if(d) setTables(d.results    ?? d); }),
-      ordersService.list().then(d   => { if(d) setOrders(d.results    ?? d); }),
-      productsService.list().then(d => { if(d) setProducts(d.results  ?? d); }),
-      movementsService.list().then(d => { if(d) setMovements(d.results ?? d); }),
+      tablesService.list().then(d => { if(d) setTables(unwrap(d)); }),
+      ordersService.list().then(d  => { if(d) setOrders(unwrap(d)); }),
+      productsService.list().then(d => { if(d) setProducts(unwrap(d)); }),
+      movementsService.list().then(d => { if(d) setMovements(unwrap(d)); }),
     ]).catch(() => {
       // Mock data already set — graceful degradation
     });
@@ -1976,7 +1976,7 @@ export default function App() {
       if (msg.type === "stock_alert")   toast.warning("Alerte stock",   msg.data?.message);
       if (msg.type === "mvt_validated") toast.success("Stock validé",   "Mouvement approuvé");
       // Refresh relevant data on WS event
-      if (msg.type === "new_order") ordersService.list().then(d=>{ if(d) setOrders(d); }).catch(()=>{});
+      if (msg.type === "new_order") ordersService.list().then(d=>{ if(d) setOrders(unwrap(d)); }).catch(()=>{});
     });
     return cleanup;
   }, [user]); // eslint-disable-line
