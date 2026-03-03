@@ -32,23 +32,23 @@ export const MOCK_PLATS = [
 ];
 
 export const MOCK_TABLES = [
-  { id:1,  num:"01", capacite:2, status:"DISPONIBLE",          montant:0 },
-  { id:2,  num:"02", capacite:4, status:"RÉSERVÉE",            montant:0 },
-  { id:3,  num:"03", capacite:4, status:"EN_SERVICE",          montant:15500 },
-  { id:4,  num:"04", capacite:6, status:"COMMANDES_PASSÉE",    montant:5000 },
-  { id:5,  num:"05", capacite:2, status:"DISPONIBLE",          montant:0 },
-  { id:6,  num:"06", capacite:8, status:"EN_ATTENTE_PAIEMENT", montant:28000 },
-  { id:7,  num:"07", capacite:4, status:"DISPONIBLE",          montant:0 },
-  { id:8,  num:"08", capacite:4, status:"EN_SERVICE",          montant:9000 },
-  { id:9,  num:"09", capacite:6, status:"DISPONIBLE",          montant:0 },
-  { id:10, num:"10", capacite:4, status:"DISPONIBLE",          montant:0 },
-  { id:11, num:"11", capacite:2, status:"RÉSERVÉE",            montant:0 },
-  { id:12, num:"12", capacite:6, status:"DISPONIBLE",          montant:0 },
+  { id:1,  numero:"01", capacite:2, status:"DISPONIBLE",          montant:0 },
+  { id:2,  numero:"02", capacite:4, status:"RÉSERVÉE",            montant:0 },
+  { id:3,  numero:"03", capacite:4, status:"EN_SERVICE",          montant:15500 },
+  { id:4,  numero:"04", capacite:6, status:"COMMANDES_PASSÉE",    montant:5000 },
+  { id:5,  numero:"05", capacite:2, status:"DISPONIBLE",          montant:0 },
+  { id:6,  numero:"06", capacite:8, status:"EN_ATTENTE_PAIEMENT", montant:28000 },
+  { id:7,  numero:"07", capacite:4, status:"DISPONIBLE",          montant:0 },
+  { id:8,  numero:"08", capacite:4, status:"EN_SERVICE",          montant:9000 },
+  { id:9,  numero:"09", capacite:6, status:"DISPONIBLE",          montant:0 },
+  { id:10, numero:"10", capacite:4, status:"DISPONIBLE",          montant:0 },
+  { id:11, numero:"11", capacite:2, status:"RÉSERVÉE",            montant:0 },
+  { id:12, numero:"12", capacite:6, status:"DISPONIBLE",          montant:0 },
 ];
 
 export const MOCK_ORDERS = [
   {
-    id:"CMD-001", tableId:3, tableNum:"03", serveur:"Aimé Dossou",
+    id:"CMD-001", tableId:3, tableNumero:"03", serveur:"Aimé Dossou",
     items:[
       { platId:1, nom:"Brochettes de bœuf",  qte:2, prix:4500 },
       { platId:7, nom:"Jus d'ananas frais",   qte:2, prix:1500 },
@@ -57,19 +57,19 @@ export const MOCK_ORDERS = [
     montant:12000, motif:"", obs:"", createdAt:"2025-12-18T20:10:00",
   },
   {
-    id:"CMD-002", tableId:3, tableNum:"03", serveur:"Aimé Dossou",
+    id:"CMD-002", tableId:3, tableNumero:"03", serveur:"Aimé Dossou",
     items:[{ platId:4, nom:"Salade Niçoise", qte:1, prix:3500 }],
     status:"LIVRÉE", cuisinier:"Lucie Agbayahou",
     montant:3500, motif:"", obs:"sans anchois", createdAt:"2025-12-18T19:55:00",
   },
   {
-    id:"CMD-003", tableId:4, tableNum:"04", serveur:"Chloé Akpovi",
+    id:"CMD-003", tableId:4, tableNumero:"04", serveur:"Chloé Akpovi",
     items:[{ platId:3, nom:"Riz jollof aux crevettes", qte:1, prix:5000 }],
     status:"EN_ATTENTE_ACCEPTATION", cuisinier:"",
     montant:5000, motif:"", obs:"", createdAt:"2025-12-18T20:15:00",
   },
   {
-    id:"CMD-004", tableId:8, tableNum:"08", serveur:"Chloé Akpovi",
+    id:"CMD-004", tableId:8, tableNumero:"08", serveur:"Chloé Akpovi",
     items:[
       { platId:2, nom:"Poulet rôti entier", qte:1, prix:8000 },
       { platId:10,nom:"Crème brûlée",       qte:1, prix:2000 },
@@ -78,7 +78,7 @@ export const MOCK_ORDERS = [
     montant:10000, motif:"", obs:"cuisson bien dorée", createdAt:"2025-12-18T20:05:00",
   },
   {
-    id:"CMD-005", tableId:8, tableNum:"08", serveur:"Chloé Akpovi",
+    id:"CMD-005", tableId:8, tableNumero:"08", serveur:"Chloé Akpovi",
     items:[{ platId:7, nom:"Jus d'ananas frais", qte:2, prix:1500 }],
     status:"EN_ATTENTE_ACCEPTATION", cuisinier:"",
     montant:3000, motif:"", obs:"", createdAt:"2025-12-18T20:20:00",

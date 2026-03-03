@@ -130,7 +130,7 @@ const Auth = {
     // POST /api/auth/login/
     const res = await Api.post('/auth/login/', { login, password });
     if (res.ok) {
-      Api.accessToken = res.data.access;
+      Api.accessToken = res.data.token;
       Api.refreshToken = res.data.refresh;
       this.updateIndicator(true, login);
       document.getElementById('logoutBtn').style.display = '';
@@ -190,7 +190,7 @@ const AuthPanel = {
     const res = await Api.post('/auth/login/', { login, password },
       UI.$('authLoginResponse'), UI.$('authLoginStatus'));
     if (res.ok) {
-      Api.accessToken  = res.data.access;
+      Api.accessToken  = res.data.token;
       Api.refreshToken = res.data.refresh;
       Auth.updateIndicator(true, login);
       document.getElementById('logoutBtn').style.display = '';
@@ -228,14 +228,16 @@ const Users = {
   async createOrUpdate() {
     const id   = UI.val('userId');
     const body = {
-      login:            UI.val('userLogin')           || undefined,
-      first_name:       UI.val('userFirstName')       || undefined,
-      last_name:        UI.val('userLastName')        || undefined,
-      email:            UI.val('userEmail')           || undefined,
-      sexe:             UI.val('userSexe')            || undefined,
-      role_id:          parseInt(UI.val('userRole'))  || undefined,
-      password:         UI.val('userPassword')        || undefined,
-      password_confirm: UI.val('userPasswordConfirm') || undefined,
+      login:              UI.val('userLogin')           || undefined,
+      first_name:         UI.val('userFirstName')       || undefined,
+      last_name:          UI.val('userLastName')        || undefined,
+      email:              UI.val('userEmail')           || undefined,
+      sexe:               UI.val('userSexe')            || undefined,
+      role_id:            parseInt(UI.val('userRole'))  || undefined,
+      date_de_naissance:  UI.val('userDateDeNaissance') || undefined,
+      telephone:          UI.val('userTelephone')       || undefined,
+      password:           UI.val('userPassword')        || undefined,
+      password_confirm:   UI.val('userPasswordConfirm') || undefined,
     };
     Object.keys(body).forEach(k => body[k] === undefined && delete body[k]);
 
@@ -283,7 +285,7 @@ const Tables = {
   async saveTable() {
     const id   = UI.val('tableId');
     const body = {
-      numero:      UI.val('tableNumero')   || undefined,
+      numero:      UI.val('tableNumero') || undefined,
       capacite:    parseInt(UI.val('tableCapacite')) || undefined,
       description: UI.val('tableDescription') || undefined,
     };

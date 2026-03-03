@@ -7,13 +7,13 @@ from decimal import Decimal
 
 class TableSerializer(serializers.ModelSerializer):
     """Serializer pour la liste des tables"""
-    num = serializers.CharField(source='numero', read_only=True)
+    # numero = serializers.CharField(source='numero', read_only=True)
     status = serializers.CharField(source='statut', read_only=True)
     montant = serializers.DecimalField(source='montant_total', max_digits=10, decimal_places=2, read_only=True)
 
     class Meta:
         model = Table
-        fields = ['id', 'num', 'capacite', 'status', 'montant', 'description']
+        fields = ['id', 'numero', 'capacite', 'status', 'montant', 'description']
         read_only_fields = ['id']
 
 
@@ -58,14 +58,14 @@ class OrderInTableSerializer(serializers.ModelSerializer):
 
 class TableDetailSerializer(serializers.ModelSerializer):
     """Serializer pour le détail d'une table avec ses commandes actives"""
-    num = serializers.CharField(source='numero', read_only=True)
+    numero = serializers.CharField(source='numero', read_only=True)
     status = serializers.CharField(source='statut', read_only=True)
     montant = serializers.DecimalField(source='montant_total', max_digits=10, decimal_places=2, read_only=True)
     orders = serializers.SerializerMethodField()
 
     class Meta:
         model = Table
-        fields = ['id', 'num', 'capacite', 'status', 'montant', 'description', 'orders']
+        fields = ['id', 'numero', 'capacite', 'status', 'montant', 'description', 'orders']
 
     def get_orders(self, obj):
         active_orders = obj.commandes.exclude(

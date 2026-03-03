@@ -115,7 +115,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     USERNAME_FIELD = 'login'
-    REQUIRED_FIELDS = ['first_name', 'last_name', 'date_de_naissance', 'sexe']
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'sexe', 'role']
 
     class Meta:
         db_table = 'user'
