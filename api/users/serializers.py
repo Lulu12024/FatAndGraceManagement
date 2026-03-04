@@ -43,7 +43,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
         model = User
         fields = [
             'login', 'password', 'first_name', 'last_name',
-            'email', 'telephone', 'date_de_naissance', 'sexe', 'role_id'
+            'telephone', 'role_id'
         ]
 
     def validate_role_id(self, value):

@@ -76,7 +76,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     first_name = models.CharField(max_length=150, verbose_name='Prénom')
     last_name = models.CharField(max_length=150, verbose_name='Nom')
-    date_de_naissance = models.DateField(verbose_name='Date de naissance')
+    date_de_naissance = models.DateField(null=True, blank=True, verbose_name='Date de naissance')
     sexe = models.CharField(max_length=1, choices=SEXE_CHOICES, verbose_name='Sexe')
     email = models.EmailField(blank=True, verbose_name='Email')
     date_embauche = models.DateField(default=timezone.now, verbose_name="Date d'embauche")
@@ -115,7 +115,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     objects = UserManager()
 
     USERNAME_FIELD = 'login'
-    REQUIRED_FIELDS = ['first_name', 'last_name', 'sexe', 'role']
+    REQUIRED_FIELDS = ['first_name', 'last_name', 'role']
 
     class Meta:
         db_table = 'user'
