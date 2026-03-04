@@ -21,7 +21,8 @@ export const authService = {
   async login(login, password) {
     try {
       const data = await api.post("/auth/login/", { login, password });
-      setToken(data.access);
+      console.log("Login successful, received token:", data.token);
+      setToken(data.token);
       localStorage.setItem("fg_refresh_token", data.refresh);
       return data; // { token, user }
     } catch (err) {
