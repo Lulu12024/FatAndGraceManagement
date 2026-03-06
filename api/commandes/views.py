@@ -142,6 +142,16 @@ class TableViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_422_UNPROCESSABLE_ENTITY
             )
 
+        # Build items snapshot from delivered orders
+        items_snapshot = []
+        for commande in table.commandes.filter(statut='LIVREE'):
+            for cp in commande.commandeplat_set.all():
+                items_snapshot.append({
+                    'nom': cp.plat.nom,
+                    'qte': cp.quantite,
+                    'prix': float(cp.prix_unitaire),
+                })
+
         serializer = PaymentSerializer(data=request.data)
         if not serializer.is_valid():
             return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -167,17 +177,8 @@ class TableViewSet(viewsets.ModelViewSet):
             mode_paiement=mode_map.get(data['mode_paiement'], 'AUTRE'),
             gerant=request.user,
             serveur=serveur,
+            items_snapshot=items_snapshot,
         )
-
-        # Build invoice items
-        items = []
-        for commande in table.commandes.filter(statut='LIVREE'):
-            for cp in commande.commandeplat_set.all():
-                items.append({
-                    'nom': cp.plat.nom,
-                    'qte': cp.quantite,
-                    'prix': float(cp.prix_unitaire),
-                })
 
         # Reset table
         table.statut = 'DISPONIBLE'
@@ -203,7 +204,7 @@ class TableViewSet(viewsets.ModelViewSet):
                 'pourboire': float(facture.pourboire),
                 'mode_paiement': data['mode_paiement'],
                 'date': facture.date_generation.isoformat(),
-                'items': items,
+                'items': items_snapshot,
             }
         })
 

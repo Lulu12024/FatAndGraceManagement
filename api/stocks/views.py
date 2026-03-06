@@ -233,7 +233,7 @@ class MovementViewSet(viewsets.ModelViewSet):
             status=status.HTTP_201_CREATED
         )
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsGestionnaireOrGerantOrAdmin])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsManagerOrAdmin])
     def validate(self, request, pk=None):
         mouvement = self.get_object()
         if mouvement.statut.nom != 'EN_ATTENTE':
@@ -295,7 +295,7 @@ class MovementViewSet(viewsets.ModelViewSet):
 
         return Response(MovementSerializer(mouvement).data)
 
-    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsGestionnaireOrGerantOrAdmin])
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsManagerOrAdmin])
     def reject(self, request, pk=None):
         mouvement = self.get_object()
         motif = request.data.get('motif', '')

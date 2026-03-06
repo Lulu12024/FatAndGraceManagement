@@ -16,7 +16,7 @@ class IsManager(permissions.BasePermission):
 class IsGerant(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and \
-               request.user.role.nom == 'Gerant'
+               request.user.role.nom == 'Gérant'
 
 
 class IsCuisinier(permissions.BasePermission):
@@ -58,19 +58,19 @@ class IsManagerOrAdmin(permissions.BasePermission):
 class IsManagerOrGerant(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and \
-               request.user.role.nom in ['Manager', 'Gerant']
+               request.user.role.nom in ['Manager', 'Gérant']
 
 
 class IsGerantOrAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and \
-               request.user.role.nom in ['Gerant', 'Administrateur']
+               request.user.role.nom in ['Gérant', 'Administrateur']
 
 
 class IsServeurOrGerantOrAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and \
-               request.user.role.nom in ['Serveur', 'Gerant', 'Administrateur']
+               request.user.role.nom in ['Serveur', 'Gérant', 'Administrateur']
 
 
 class IsCuisinierOrAdmin(permissions.BasePermission):
@@ -82,7 +82,7 @@ class IsCuisinierOrAdmin(permissions.BasePermission):
 class IsGestionnaireOrGerantOrAdmin(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and \
-               request.user.role.nom in ['Gestionnaire de stock', 'Gerant', 'Administrateur']
+               request.user.role.nom in ['Gestionnaire de stock', 'Gérant', 'Administrateur']
 
 
 class IsOwnerOrAdmin(permissions.BasePermission):
@@ -104,7 +104,7 @@ class CanViewStock(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and \
                request.user.role.nom in [
-                   'Cuisinier', 'Gestionnaire de stock', 'Gerant',
+                   'Cuisinier', 'Gestionnaire de stock', 'Gérant',
                    'Manager', 'Auditeur', 'Administrateur'
                ]
 
@@ -114,7 +114,7 @@ class CanViewMovements(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and \
                request.user.role.nom in [
-                   'Gestionnaire de stock', 'Gerant',
+                   'Gestionnaire de stock', 'Gérant',
                    'Manager', 'Auditeur', 'Administrateur'
                ]
 
@@ -124,7 +124,7 @@ class CanViewInvoices(permissions.BasePermission):
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and \
                request.user.role.nom in [
-                   'Gerant', 'Manager', 'Auditeur', 'Administrateur'
+                   'Gérant', 'Manager', 'Auditeur', 'Administrateur'
                ]
 
 
@@ -132,7 +132,7 @@ class CanViewReports(permissions.BasePermission):
     """Gerant, Manager, Admin"""
     def has_permission(self, request, view):
         return request.user and request.user.is_authenticated and \
-               request.user.role.nom in ['Gerant', 'Manager', 'Administrateur']
+               request.user.role.nom in ['Gérant', 'Manager', 'Administrateur']
 
 
 class CanViewAuditLogs(permissions.BasePermission):

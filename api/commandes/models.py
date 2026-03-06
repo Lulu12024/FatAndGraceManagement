@@ -197,6 +197,7 @@ class Facture(models.Model):
         default=Decimal('0.00')
     )
     mode_paiement = models.CharField(max_length=20, choices=MODE_PAIEMENT_CHOICES)
+    items_snapshot = models.JSONField(default=list, blank=True, verbose_name='Snapshot des articles facturés')
     
     # Relations
     table = models.ForeignKey(

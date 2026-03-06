@@ -84,6 +84,14 @@ class User(AbstractBaseUser, PermissionsMixin):
     password = models.CharField(max_length=255)
     is_deleted = models.BooleanField(default=False, verbose_name='Supprimé')
     is_activite = models.BooleanField(default=True, verbose_name='Actif')
+    @property
+    def is_active(self):
+        return self.is_activite
+
+    @is_active.setter
+    def is_active(self, value):
+        self.is_activite = value
+    
     telephone = models.CharField(max_length=20, blank=True, verbose_name='Téléphone')
     role = models.ForeignKey(Role, on_delete=models.PROTECT, related_name='users')
     permissions = models.ManyToManyField(Permission, related_name='users_permissions', blank=True)

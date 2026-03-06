@@ -18,5 +18,5 @@ class CommandePlatInline(admin.TabularInline):
 class CommandeAdmin(admin.ModelAdmin):
     list_display = ['id', 'table', 'serveur', 'cuisinier', 'statut', 'date_commande', 'prix_total']
     list_filter = ['statut', 'date_commande']
-    search_fields = ['table', 'description']
+    search_fields = ['table', 'serveur', 'cuisinier', 'description']
     inlines = [CommandePlatInline]
