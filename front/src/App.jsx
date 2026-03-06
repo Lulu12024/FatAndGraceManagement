@@ -12,6 +12,7 @@ import { productsService, movementsService } from "./api/stock";
 import { invoicesService, usersService, auditService, reportsService, notificationsService } from "./api/services";
 import { MOCK_TABLES, MOCK_ORDERS, MOCK_PRODUCTS, MOCK_MOVEMENTS, MOCK_INVOICES, MOCK_AUDIT, MOCK_USERS, MOCK_PLATS, ROLES } from "./mock";
 import { unwrap } from "./api/client";
+import { platsService } from "./api/plats"; 
 
 // Layout
 import Sidebar from "./components/Sidebar";
@@ -57,8 +58,10 @@ export default function App() {
   const [orders,    setOrders]    = useState(MOCK_ORDERS);
   const [products,  setProducts]  = useState(MOCK_PRODUCTS);
   const [movements, setMovements] = useState(MOCK_MOVEMENTS);
-  const invoices = MOCK_INVOICES;
-  const plats    = MOCK_PLATS;
+  const [plats, setPlats] = useState(MOCK_PLATS);
+
+  // const invoices = MOCK_INVOICES;
+  // const plats    = MOCK_PLATS;
 
   // Initial data load from API
   useEffect(() => {
@@ -68,6 +71,7 @@ export default function App() {
       ordersService.list().then(d  => { if(d) setOrders(unwrap(d)); }),
       productsService.list().then(d => { if(d) setProducts(unwrap(d)); }),
       movementsService.list().then(d => { if(d) setMovements(unwrap(d)); }),
+      platsService.list().then(d    => { if(d) setPlats(d); }),
     ]).catch(() => {
       // Mock data already set — graceful degradation
     });

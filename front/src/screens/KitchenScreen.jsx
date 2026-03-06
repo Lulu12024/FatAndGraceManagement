@@ -3,6 +3,8 @@ import { C, ORDER_STATUS, MVT_TYPE_META, fmt, now, timeAgo } from "../styles/tok
 import { ordersService } from "../api/orders";
 import { movementsService } from "../api/stock";
 import { Card, Badge, Btn, Modal, Input, Empty } from "../components/ui";
+import { handleApiError } from "../hooks/index";
+
 
 const KitchenScreen = ({ orders, setOrders, products, movements, setMovements, role, toast }) => {
   const [filter, setFilter] = useState("EN_ATTENTE_ACCEPTATION");
