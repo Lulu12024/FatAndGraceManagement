@@ -88,4 +88,21 @@ export const tablesService = {
       throw err;
     }
   },
+  async create(payload) {
+    try {
+      return await api.post("/tables/", payload);
+    } catch (err) {
+      if (err.isNetwork) return { id: Date.now(), ...payload, status: "DISPONIBLE", montant: 0 };
+      throw err;
+    }
+  },
+
+  async remove(id) {
+    try {
+      return await api.delete(`/tables/${id}/`);
+    } catch (err) {
+      if (err.isNetwork) return null;
+      throw err;
+    }
+  },
 };

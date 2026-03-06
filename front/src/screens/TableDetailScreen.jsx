@@ -1,10 +1,11 @@
 import { useState, useEffect } from "react";
-import { C, TABLE_STATUS, ORDER_STATUS, fmt, now } from "../styles/tokens";
+import { C, TABLE_STATUS, ORDER_STATUS, fmt, now, timeAgo } from "../styles/tokens";
 import { tablesService } from "../api/tables";
 import { ordersService } from "../api/orders";
 import { invoicesService } from "../api/services";
 import { MOCK_PLATS } from "../mock";
 import { Card, Badge, Btn, Modal, Input, Select, Divider, Empty, Spinner } from "../components/ui";
+import { handleApiError } from "../hooks/index";
 
 const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, plats }) => {
   const [showOrderForm, setShowOrderForm] = useState(false);

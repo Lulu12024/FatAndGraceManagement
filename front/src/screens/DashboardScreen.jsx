@@ -107,7 +107,7 @@ const DashboardScreen = ({ role, tables, orders, products, movements, toast }) =
               <div key={t.id} style={{ width:60, height:60, borderRadius:10, background:st.bg,
                 border:`1px solid ${st.color}50`, display:"flex", flexDirection:"column",
                 alignItems:"center", justifyContent:"center", gap:4 }}>
-                <span style={{ fontSize:11, fontWeight:700, color:st.color }}>T{t.num}</span>
+                <span style={{ fontSize:11, fontWeight:700, color:st.color }}>T{t.numero}</span>
                 <Dot color={st.color} size={6}/>
               </div>
             );
