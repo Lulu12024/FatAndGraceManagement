@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { C, ORDER_STATUS, now, timeAgo } from "../styles/tokens";
 import { ordersService } from "../api/orders";
-import { movementsService } from "../api/stock";
+import { movementsService , demandesService  } from "../api/stock";
 import { Card, Badge, Btn, Modal, Input, Empty } from "../components/ui";
 import { handleApiError } from "../hooks/index";
 
@@ -88,26 +88,15 @@ const KitchenScreen = ({ orders, setOrders, products, movements, setMovements, r
     setLoading(true);
     try {
       for (const si of stockItems) {
-        const mvt = await movementsService.create({
-          produit_id:    si.id,
-          type:          "SORTIE",
-          qte:           si.qte,
+        await demandesService.create({
+          produit:       si.id,
+          quantite:      si.qte,          // ← "quantite" pas "qte"
           justification: `Commande ${stockReqId}`,
         });
-        setMovements(p => [{
-          ...mvt,
-          produitId:     si.id,
-          produit:       si.nom,
-          type:          "SORTIE",
-          qte:           si.qte,
-          statut:        "EN_ATTENTE",
-          justification: `Commande ${stockReqId}`,
-          date:          now(),
-        }, ...p]);
       }
       setStockReqId(null);
       setStockItems([]);
-      toast.success("Demande de stock soumise", "Gestionnaire notifié");
+      toast.success("Demande soumise", "Gestionnaire notifié pour validation");
     } catch(err) { handleApiError(err, toast); }
     finally { setLoading(false); }
   };

@@ -2,6 +2,7 @@ import { useState } from "react";
 import { C, MVT_STATUS_META, fmt, now } from "../styles/tokens";
 import { movementsService } from "../api/stock";
 import { Card, Badge, Btn, Modal, Input, Select, Empty } from "../components/ui";
+import { handleApiError } from "../hooks/index";
 
 const StockEntriesScreen = ({ products, movements, setMovements, role, toast }) => {
   const [showForm, setShowForm] = useState(false);
@@ -14,8 +15,8 @@ const StockEntriesScreen = ({ products, movements, setMovements, role, toast }) 
     setLoading(true);
     try {
       for (const item of items) {
-        const mvt = await movementsService.create({ produit_id:item.id, type:"ENTRÉE", qte:item.qte, justification:`Livraison ${fournisseur}` });
-        setMovements(p=>[{ ...mvt, produitId:item.id, produit:item.nom, type:"ENTRÉE", qte:item.qte, statut:"EN_ATTENTE", justification:`Livraison ${fournisseur}`, auteur:"Utilisateur courant", date:now() },...p]);
+        const mvt = await movementsService.create({ produit_id:item.id, type:"ENTRÉE", quantite:item.qte, justification:`Livraison ${fournisseur}` });
+        setMovements(p=>[{ ...mvt, produitId:item.id, produit:item.nom, type:"ENTRÉE", quantite:item.qte, statut:"EN_ATTENTE", justification:`Livraison ${fournisseur}`, auteur:"Utilisateur courant", date:now() },...p]);
       }
       setFournisseur(""); setItems([]); setShowForm(false);
       toast.success("Entrée enregistrée","Manager notifié pour validation");

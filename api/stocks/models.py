@@ -129,7 +129,7 @@ class MouvementStock(models.Model):
         related_name='mouvements'
     )
     quantite = models.DecimalField(max_digits=10, decimal_places=2)
-    date = models.DateField(default=timezone.now)
+    date = models.DateTimeField(default=timezone.now)
     heure = models.TimeField(auto_now_add=True)
     justification = models.TextField(blank=True, verbose_name='Justification/Motif')
     motif_rejet = models.TextField(blank=True, verbose_name='Motif de rejet')
@@ -140,7 +140,7 @@ class MouvementStock(models.Model):
         blank=True,
         verbose_name='Fournisseur (pour les entrées)'
     )
-    date_reception = models.DateField(
+    date_reception = models.DateTimeField(
         null=True, 
         blank=True,
         verbose_name='Date de réception (pour les entrées)'

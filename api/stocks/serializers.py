@@ -5,7 +5,7 @@ from .models import Produit, Unite, Stock, MouvementStock, DemandeProduit
 class UniteSerializer(serializers.ModelSerializer):
     class Meta:
         model = Unite
-        fields = ['id', 'nom', 'abreviation']
+        fields = ['id', 'nom', ]
 
 
 class ProductSerializer(serializers.ModelSerializer):
@@ -63,6 +63,7 @@ class ProductCreateSerializer(serializers.ModelSerializer):
 class MovementSerializer(serializers.ModelSerializer):
     """Serializer pour les mouvements de stock"""
     id = serializers.SerializerMethodField()
+    num_id = serializers.IntegerField(source='id', read_only=True)
     type = serializers.CharField(source='type_mouvement.nom', read_only=True)
     produit_id = serializers.IntegerField(source='produit.id', read_only=True)
     produit_nom = serializers.CharField(source='produit.nom', read_only=True)
@@ -73,7 +74,7 @@ class MovementSerializer(serializers.ModelSerializer):
     class Meta:
         model = MouvementStock
         fields = [
-            'id', 'type', 'quantite', 'date', 'heure',
+            'id', 'type', 'num_id', 'quantite', 'date', 'heure',
             'justification', 'statut', 'produit_id', 'produit_nom',
             'demandeur', 'valideur'
         ]
@@ -120,7 +121,6 @@ class DemandeProduitSerializer(serializers.ModelSerializer):
     class Meta:
         model = DemandeProduit
         fields = [
-            'id', 'produit', 'produit_nom', 'quantite',
-            'motif', 'statut', 'demandeur', 'date_demande'
+            'id', 'produit', 'produit_nom', 'quantite','statut', 'demandeur', 'date_demande'
         ]
         read_only_fields = ['id', 'statut', 'demandeur', 'date_demande']

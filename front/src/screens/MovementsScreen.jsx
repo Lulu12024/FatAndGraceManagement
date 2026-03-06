@@ -45,19 +45,24 @@ const MovementsScreen = ({ movements, setMovements, products, role, toast, typeF
       <div style={{ display:"flex", flexDirection:"column", gap:8 }}>
         {visible.map((m,i) => {
           const meta   = MVT_TYPE_META[m.type];
-          const stMeta = MVT_STATUS_META[m.statut];
+          const stMeta = MVT_STATUS_META[m.statut] ?? { label: m.statut, color: C.muted };
           return (
             <Card key={m.id} className="anim-fadeUp" style={{ padding:"12px 18px", animationDelay:`${i*25}ms`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
               <div style={{ display:"flex", gap:12, alignItems:"center" }}>
                 <div style={{ width:38, height:38, borderRadius:9, background:`${meta?.color}15`, border:`1px solid ${meta?.color}35`, display:"flex", alignItems:"center", justifyContent:"center", fontSize:16 }}>{meta?.icon}</div>
                 <div>
-                  <div style={{ fontSize:13, fontWeight:600, color:C.cream }}>{m.produit} <span style={{ color:C.muted, fontWeight:400 }}>— {m.qte} unités</span></div>
-                  <div style={{ fontSize:11, color:C.muted, marginTop:2 }}>{m.justification} · {m.auteur}</div>
+                  <div style={{ fontSize:13, fontWeight:600, color:C.cream }}>
+                    {m.produit_nom ?? m.produit} 
+                    <span style={{ color:C.muted }}>— {m.quantite ?? m.qte} unités</span>
+                  </div>
+                  <div style={{ fontSize:11, color:C.muted }}>
+                    {m.justification} · {m.demandeur ?? m.auteur}
+                  </div>
                 </div>
               </div>
               <div style={{ textAlign:"right", flexShrink:0 }}>
                 <Badge color={stMeta?.color}>{stMeta?.label}</Badge>
-                <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>{new Date(m.date).toLocaleString("fr-FR")}</div>
+                <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>{m.date ? `${m.date}${m.heure ? " " + m.heure.slice(0,5) : ""}` : "—"}</div>
               </div>
             </Card>
           );

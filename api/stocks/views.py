@@ -189,7 +189,7 @@ class MovementViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         serializer = MovementCreateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
+        serializer.is_valid(raise_exception=True)   
 
         data = serializer.validated_data
         produit = Produit.objects.get(id=data['produit_id'])

@@ -146,7 +146,13 @@ export default function App() {
   };
 
   const renderScreen = () => {
-    const role = user.role;
+    const normalizedRole = (user?.role || "")
+      .toLowerCase()
+      .replace("gestionnaire de stock", "gestionnaire")
+      .replace("administrateur", "admin")
+      .replace("gérant", "gerant");
+      
+    const role = normalizedRole;
     const sharedProps = { role, toast };
     if (screen==="table-detail" && selTable) {
       return <TableDetailScreen {...sharedProps} table={selTable} orders={orders} setOrders={setOrders} setTables={setTables} plats={plats}/>;
