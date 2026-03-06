@@ -4,6 +4,14 @@ import { tablesService } from "../api/tables";
 import { Card, Badge, Btn, Dot, Empty, Modal, Input } from "../components/ui";
 import { handleApiError } from "../hooks/index";
 
+const STATUS_MAP = {
+  "DISPONIBLE":          "DISPONIBLE",
+  "RESERVEE":            "RÉSERVÉE",
+  "COMMANDES_PASSEE":    "COMMANDES_PASSÉE",
+  "EN_SERVICE":          "EN_SERVICE",
+  "EN_ATTENTE_PAIEMENT": "EN_ATTENTE_PAIEMENT",
+  "PAYEE":               "PAYÉE",
+};
 const ADMIN_ROLES = ["admin", "administrateur", "manager", "gérant"];
 
 const TablesScreen = ({ tables, setTables, orders, role, onSelectTable, toast }) => {
@@ -13,7 +21,11 @@ const TablesScreen = ({ tables, setTables, orders, role, onSelectTable, toast })
   const [loadingAdd, setLoadingAdd] = useState(false);
   const [form, setForm]         = useState({ numero: "", capacite: "", description: "" });
 
-  const filtered = filter === "ALL" ? tables : tables.filter(t => t.status === filter);
+  // const filtered = filter === "ALL" ? tables : tables.filter(t => t.status === filter);
+  const filtered = filter === "ALL"
+    ? tables
+    : tables.filter(t => (STATUS_MAP[t.status] ?? t.status) === filter);
+    
   const isAdmin  = ADMIN_ROLES.includes(role);
 
   /* ── Réserver / Annuler ── */
@@ -22,7 +34,7 @@ const TablesScreen = ({ tables, setTables, orders, role, onSelectTable, toast })
     try {
       if (action === "reserve") {
         await tablesService.reserve(t.id);
-        setTables(p => p.map(x => x.id === t.id ? { ...x, status: "RÉSERVÉE" } : x));
+        setTables(p => p.map(x => x.id === t.id ? { ...x, status: "RESERVEE" } : x));
         toast.success("Table réservée", `Table ${t.numero} réservée`);
       } else if (action === "cancel") {
         await tablesService.cancelReservation(t.id);
@@ -106,7 +118,9 @@ const TablesScreen = ({ tables, setTables, orders, role, onSelectTable, toast })
       {/* Grille des tables */}
       <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(210px,1fr))", gap: 14 }}>
         {filtered.map((t, i) => {
-          const st = TABLE_STATUS[t.status] || TABLE_STATUS.DISPONIBLE;
+          const stKey = STATUS_MAP[t.status] ?? t.status;
+          const st    = TABLE_STATUS[stKey] || TABLE_STATUS.DISPONIBLE;
+
           const tOrders = orders.filter(o => o.tableId === t.id && !["LIVRÉE", "ANNULÉE", "REFUSÉE"].includes(o.status));
           return (
             <Card key={t.id} className="hover-lift anim-fadeUp"
@@ -139,10 +153,10 @@ const TablesScreen = ({ tables, setTables, orders, role, onSelectTable, toast })
                 )}
 
                 <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }} onClick={e => e.stopPropagation()}>
-                  {t.status === "DISPONIBLE" && ["serveur", "gerant", "admin"].includes(role) && (
+                  {t.status === "DISPONIBLE" && ["serveur", "gérant", "admin"].includes(role) && (
                     <Btn small variant="outline" loading={busy === t.id} onClick={() => doAction(t, "reserve")}>Réserver</Btn>
                   )}
-                  {t.status === "RÉSERVÉE" && ["serveur", "gerant", "admin"].includes(role) && (
+                  {t.status === "RESERVEE" && ["serveur", "gérant", "admin"].includes(role) && (
                     <Btn small variant="danger" loading={busy === t.id} onClick={() => doAction(t, "cancel")}>Annuler</Btn>
                   )}
                   <Btn small variant="ghost" onClick={() => onSelectTable(t)}>Détail →</Btn>

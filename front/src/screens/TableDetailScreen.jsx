@@ -18,7 +18,9 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
   const [pourboire, setPourboire] = useState("0");
   const [loading,   setLoading]   = useState(false);
 
-  const tableOrders  = orders.filter(o=>o.tableId===table.id);
+  const tableOrders = orders.filter(o =>
+    (o.tableId === table.id) || (o.table_id === table.id)
+  );
   const activeOrders = tableOrders.filter(o=>!["ANNULÉE","REFUSÉE"].includes(o.status));
   const totalAmount  = activeOrders.reduce((s,o)=>s+(o.montant||0),0);
   const allDelivered = activeOrders.length>0 && activeOrders.every(o=>o.status==="LIVRÉE");
@@ -110,10 +112,10 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
           {["serveur","admin"].includes(role) && ["RÉSERVÉE","EN_SERVICE","COMMANDES_PASSÉE"].includes(table.status) && (
             <Btn variant="outline" onClick={()=>setShowOrderForm(true)}>+ Nouvelle commande</Btn>
           )}
-          {allDelivered && ["serveur","gerant","admin"].includes(role) && table.status==="EN_SERVICE" && (
+          {allDelivered && ["serveur","gérant","admin"].includes(role) && table.status==="EN_SERVICE" && (
             <Btn variant="info" loading={loading} onClick={closeTable}>Clôturer la table</Btn>
           )}
-          {table.status==="EN_ATTENTE_PAIEMENT" && ["gerant","admin"].includes(role) && (
+          {table.status==="EN_ATTENTE_PAIEMENT" && ["gérant","admin"].includes(role) && (
             <Btn variant="success" onClick={()=>setShowPayModal(true)}>💳 Enregistrer paiement</Btn>
           )}
         </div>
@@ -175,7 +177,7 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
                     {["EN_ATTENTE_ACCEPTATION","STOCKÉE"].includes(o.status) && ["serveur","admin"].includes(role) && (
                       <Btn small variant="danger" onClick={()=>setShowCancelM(o.id)}>Annuler</Btn>
                     )}
-                    {["EN_ATTENTE_ACCEPTATION","EN_PRÉPARATION","EN_ATTENTE_LIVRAISON"].includes(o.status) && ["gerant","admin"].includes(role) && (
+                    {["EN_ATTENTE_ACCEPTATION","EN_PRÉPARATION","EN_ATTENTE_LIVRAISON"].includes(o.status) && ["gérant","admin"].includes(role) && (
                       <Btn small variant="danger" onClick={()=>setShowCancelM(o.id)}>Annuler (Gérant)</Btn>
                     )}
                   </div>

@@ -1,8 +1,9 @@
 import { useState, useEffect,useMemo } from "react";
 import { C, MVT_TYPE_META, MVT_STATUS_META, fmt, timeAgo } from "../styles/tokens";
 import { productsService } from "../api/stock";
-import { Card, Badge, Btn, Modal, Input, Select, Empty, Spinner } from "../components/ui";
-
+import { Card, Badge, Btn, Modal, Input, Select, Empty, Spinner, Divider } from "../components/ui";
+import { handleApiError } from "../hooks/index";
+import { movementsService } from "../api/stock";
 
 const StockScreen = ({ products, setProducts, movements, setMovements, role, toast }) => {
   const [search, setSearch]   = useState("");
@@ -70,7 +71,7 @@ const StockScreen = ({ products, setProducts, movements, setMovements, role, toa
             </button>
           ))}
         </div>
-        {["gestionnaire","gerant","admin"].includes(role) && (
+        {["gestionnaire","gérant","admin"].includes(role) && (
           <div style={{ marginLeft:"auto" }}>
             <Btn variant="outline" onClick={()=>setShowAdd(true)}>+ Nouveau produit</Btn>
           </div>

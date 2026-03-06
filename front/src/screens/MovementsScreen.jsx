@@ -1,7 +1,8 @@
 import { useState } from "react";
-import { C, MVT_TYPE_META, MVT_STATUS_META, fmt, timeAgo } from "../styles/tokens";
+import { C, MVT_TYPE_META, MVT_STATUS_META, fmt, now, timeAgo} from "../styles/tokens";
 import { movementsService } from "../api/stock";
-import { Card, Badge, Btn, Empty } from "../components/ui";
+import {  handleApiError } from "../hooks";
+import { Card, Badge, Btn, Modal, Input, Select, Empty, Spinner } from "../components/ui";
 
 const MovementsScreen = ({ movements, setMovements, products, role, toast, typeFilter: defaultType="ALL" }) => {
   const [showForm, setShowForm] = useState(false);
@@ -36,7 +37,7 @@ const MovementsScreen = ({ movements, setMovements, products, role, toast, typeF
             {t==="ALL"?"Tous les mouvements":t}
           </button>
         ))}
-        {["gestionnaire","gerant","admin"].includes(role) && (
+        {["gestionnaire","gérant","admin"].includes(role) && (
           <Btn variant="outline" small onClick={()=>setShowForm(true)} style={{ marginLeft:"auto" }}>+ Initier une sortie</Btn>
         )}
       </div>

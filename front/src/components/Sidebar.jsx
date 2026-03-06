@@ -15,10 +15,11 @@ const NAV = {
     { id:"stock-request",icon:"◉",  label:"Demande stock" },
     { id:"stats",        icon:"◎",  label:"Mes statistiques" },
   ],
-  gerant:       [
+  gerant:       [ 
     { id:"dashboard",    icon:"▦",  label:"Tableau de bord" },
     { id:"tables",       icon:"⬚",  label:"Tables" },
-    { id:"orders",       icon:"≡",  label:"Commandes" },
+    { id:"orders",       icon:"≡",   label:"Commandes" },
+    { id: "menu",        icon:"✦", label: "Menu & Plats" },
     { id:"invoices",     icon:"◻",  label:"Factures" },
     { id:"stock",        icon:"◉",  label:"Stock" },
     { id:"stock-exits",  icon:"◈",  label:"Sorties stock" },
@@ -36,6 +37,7 @@ const NAV = {
     { id:"dashboard",    icon:"▦",  label:"Tableau de bord" },
     { id:"stock-validate",icon:"✓", label:"Validation stock" },
     { id:"stock",        icon:"◉",  label:"Stock" },
+    { id: "menu",        icon:"✦", label: "Menu & Plats" },
     { id:"reports",      icon:"◎",  label:"Rapports KPI" },
     { id:"team",         icon:"◐",  label:"Équipe" },
     { id:"audit",        icon:"◑",  label:"Audit" },
@@ -48,11 +50,12 @@ const NAV = {
     { id:"invoices",     icon:"◻",  label:"Factures" },
     { id:"audit",        icon:"◑",  label:"Audit" },
   ],
-  admin:        [
+  admin:  [
     { id:"dashboard",    icon:"▦",  label:"Tableau de bord" },
     { id:"tables",       icon:"⬚",  label:"Tables" },
     { id:"kitchen",      icon:"◈",  label:"Cuisine" },
     { id:"orders",       icon:"≡",  label:"Commandes" },
+    { id: "menu",        icon:"✦", label: "Menu & Plats" },
     { id:"stock",        icon:"◉",  label:"Stock" },
     { id:"stock-entries",icon:"⊕",  label:"Entrées" },
     { id:"stock-exits",  icon:"⊖",  label:"Sorties" },
@@ -65,7 +68,16 @@ const NAV = {
 };
 
 const Sidebar = ({ role, screen, onNav, user, onLogout, collapsed, setCollapsed, notifCount }) => {
-  const items = NAV[role] || NAV.admin;
+  
+  const roleKey = (role || "")
+  .toLowerCase()
+  .replace("gestionnaire de stock", "gestionnaire")
+  // .replace("administrateur", "admin")
+  // .replace("gérant", "gerant")
+  .split(" ")[0]; 
+
+  const items = NAV[roleKey] || NAV.admin;
+
   return (
     <div style={{ width:collapsed?66:226, minHeight:"100vh", background:C.bg1,
       borderRight:`1px solid rgba(255,255,255,0.05)`, display:"flex", flexDirection:"column",

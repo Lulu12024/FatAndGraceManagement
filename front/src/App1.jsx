@@ -499,7 +499,7 @@ const DashboardScreen = ({ role, tables, orders, products, movements, toast }) =
         <StatCard label="En service" value={tablesEnService} icon="🍽️" color={C.warning} delay={60}/>
         <StatCard label="Commandes actives" value={cmdActives} icon="📋" color={C.info} sub={`${cmdPrêtes} prêtes`} delay={120}/>
         {cmdEnAttente > 0 && <StatCard label="En attente cuisine" value={cmdEnAttente} icon="⏳" color={C.gold} delay={180}/>}
-        {["gestionnaire","gerant","manager","admin"].includes(role) && (
+        {["gestionnaire","gérant","manager","admin"].includes(role) && (
           <StatCard label="Alertes stock" value={stockAlerte} icon="⚠️" color={stockAlerte>0?C.danger:C.success} delay={240}/>
         )}
         {["manager","admin"].includes(role) && (
@@ -674,10 +674,10 @@ const TablesScreen = ({ tables, setTables, orders, role, onSelectTable, toast })
                 )}
 
                 <div style={{ display:"flex", gap:6, flexWrap:"wrap" }} onClick={e=>e.stopPropagation()}>
-                  {t.status==="DISPONIBLE" && ["serveur","gerant","admin"].includes(role) && (
+                  {t.status==="DISPONIBLE" && ["serveur","gérant","admin"].includes(role) && (
                     <Btn small variant="outline" loading={busy===t.id} onClick={()=>doAction(t,"reserve")}>Réserver</Btn>
                   )}
-                  {t.status==="RÉSERVÉE" && ["serveur","gerant","admin"].includes(role) && (
+                  {t.status==="RÉSERVÉE" && ["serveur","gérant","admin"].includes(role) && (
                     <Btn small variant="danger" loading={busy===t.id} onClick={()=>doAction(t,"cancel")}>Annuler</Btn>
                   )}
                   <Btn small variant="ghost" onClick={()=>onSelectTable(t)}>Détail →</Btn>
@@ -797,10 +797,10 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
           {["serveur","admin"].includes(role) && ["RÉSERVÉE","EN_SERVICE","COMMANDES_PASSÉE"].includes(table.status) && (
             <Btn variant="outline" onClick={()=>setShowOrderForm(true)}>+ Nouvelle commande</Btn>
           )}
-          {allDelivered && ["serveur","gerant","admin"].includes(role) && table.status==="EN_SERVICE" && (
+          {allDelivered && ["serveur","gérant","admin"].includes(role) && table.status==="EN_SERVICE" && (
             <Btn variant="info" loading={loading} onClick={closeTable}>Clôturer la table</Btn>
           )}
-          {table.status==="EN_ATTENTE_PAIEMENT" && ["gerant","admin"].includes(role) && (
+          {table.status==="EN_ATTENTE_PAIEMENT" && ["gérant","admin"].includes(role) && (
             <Btn variant="success" onClick={()=>setShowPayModal(true)}>💳 Enregistrer paiement</Btn>
           )}
         </div>
@@ -862,7 +862,7 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
                     {["EN_ATTENTE_ACCEPTATION","STOCKÉE"].includes(o.status) && ["serveur","admin"].includes(role) && (
                       <Btn small variant="danger" onClick={()=>setShowCancelM(o.id)}>Annuler</Btn>
                     )}
-                    {["EN_ATTENTE_ACCEPTATION","EN_PRÉPARATION","EN_ATTENTE_LIVRAISON"].includes(o.status) && ["gerant","admin"].includes(role) && (
+                    {["EN_ATTENTE_ACCEPTATION","EN_PRÉPARATION","EN_ATTENTE_LIVRAISON"].includes(o.status) && ["gérant","admin"].includes(role) && (
                       <Btn small variant="danger" onClick={()=>setShowCancelM(o.id)}>Annuler (Gérant)</Btn>
                     )}
                   </div>
@@ -1194,7 +1194,7 @@ const StockScreen = ({ products, setProducts, movements, setMovements, role, toa
             </button>
           ))}
         </div>
-        {["gestionnaire","gerant","admin"].includes(role) && (
+        {["gestionnaire","gérant","admin"].includes(role) && (
           <div style={{ marginLeft:"auto" }}>
             <Btn variant="outline" onClick={()=>setShowAdd(true)}>+ Nouveau produit</Btn>
           </div>
@@ -1413,7 +1413,7 @@ const MovementsScreen = ({ movements, setMovements, products, role, toast, typeF
             {t==="ALL"?"Tous les mouvements":t}
           </button>
         ))}
-        {["gestionnaire","gerant","admin"].includes(role) && (
+        {["gestionnaire","gérant","admin"].includes(role) && (
           <Btn variant="outline" small onClick={()=>setShowForm(true)} style={{ marginLeft:"auto" }}>+ Initier une sortie</Btn>
         )}
       </div>

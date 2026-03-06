@@ -35,6 +35,7 @@ import ReportsScreen from "./screens/ReportsScreen";
 import TeamScreen from "./screens/TeamScreen";
 import AuditScreen from "./screens/AuditScreen";
 import StatsScreen from "./screens/StatsScreen";
+import PlatsScreen from "./screens/PlatsScreen";
 
 export default function App() {
   useEffect(() => { injectGlobalCSS(); }, []);
@@ -61,6 +62,7 @@ export default function App() {
   const [plats, setPlats] = useState(MOCK_PLATS);
 
   // const invoices = MOCK_INVOICES;
+  const [invoices, setInvoices] = useState(MOCK_INVOICES);
   // const plats    = MOCK_PLATS;
 
   // Initial data load from API
@@ -71,7 +73,8 @@ export default function App() {
       ordersService.list().then(d  => { if(d) setOrders(unwrap(d)); }),
       productsService.list().then(d => { if(d) setProducts(unwrap(d)); }),
       movementsService.list().then(d => { if(d) setMovements(unwrap(d)); }),
-      platsService.list().then(d    => { if(d) setPlats(d); }),
+      platsService.list().then(d    => {  if (d) setPlats(Array.isArray(d) ? d : (d.results ?? [])); }),
+      invoicesService.list().then(d => { if(d) setInvoices(Array.isArray(d) ? d : (d.results ?? [])); }),
     ]).catch(() => {
       // Mock data already set — graceful degradation
     });
@@ -107,7 +110,24 @@ export default function App() {
   const handleLogin  = (u)  => { setUser(u); setScreen("dashboard"); };
   const handleLogout = ()   => { authService.logout(); setUser(null); setScreen("dashboard"); };
   const handleNav    = (s)  => { setScreen(s); setSelTable(null); };
-  const handleSelTable = (t) => { setSelTable(t); setScreen("table-detail"); };
+
+  const handleSelTable = (t) => {
+    setSelTable(t);
+    setScreen("table-detail");
+    // Recharger les commandes de cette table depuis l'API
+    ordersService.list({ table_id: t.id })
+      .then(d => {
+        if (d) {
+          const fresh = Array.isArray(d) ? d : (d.results ?? []);
+          // Fusionner — remplacer les commandes de cette table
+          setOrders(prev => [
+            ...prev.filter(o => (o.tableId ?? o.table_id) !== t.id),
+            ...fresh,
+          ]);
+        }
+      })
+      .catch(() => {});
+  };
 
   if (!user) return (
     <>
@@ -121,8 +141,8 @@ export default function App() {
     orders:"Commandes", stock:"Stock", "stock-entries":"Entrées de stock",
     "stock-exits":"Sorties de stock", "stock-history":"Historique des mouvements",
     "stock-validate":"Validation stock", "stock-request":"Demande de stock",
-    invoices:"Factures", reports:"Rapports & KPI", team:"Équipe & Utilisateurs",
-    audit:"Journal d'audit", stats:"Mes statistiques", "table-detail":`Table ${selTable?.num||""}`,
+    invoices:"Factures", reports:"Rapports & KPI", team:"Équipe & Utilisateurs",menu: "Gestion du menu",
+    audit:"Journal d'audit", stats:"Mes statistiques", "table-detail":`Table ${selTable?.numero ||""}`,
   };
 
   const renderScreen = () => {
@@ -147,6 +167,7 @@ export default function App() {
       case "team":          return <TeamScreen {...sharedProps}/>;
       case "audit":         return <AuditScreen {...sharedProps}/>;
       case "stats":         return <StatsScreen {...sharedProps} orders={orders}/>;
+      case "menu":          return <PlatsScreen role={role} toast={toast} plats={plats} setPlats={setPlats}/>;
       default:              return <DashboardScreen {...sharedProps} tables={tables} orders={orders} products={products} movements={movements}/>;
     }
   };

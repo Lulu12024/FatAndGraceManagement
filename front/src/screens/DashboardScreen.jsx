@@ -27,7 +27,7 @@ const DashboardScreen = ({ role, tables, orders, products, movements, toast }) =
         <StatCard label="En service" value={tablesEnService} icon="🍽️" color={C.warning} delay={60}/>
         <StatCard label="Commandes actives" value={cmdActives} icon="📋" color={C.info} sub={`${cmdPrêtes} prêtes`} delay={120}/>
         {cmdEnAttente > 0 && <StatCard label="En attente cuisine" value={cmdEnAttente} icon="⏳" color={C.gold} delay={180}/>}
-        {["gestionnaire","gerant","manager","admin"].includes(role) && (
+        {["gestionnaire","gérant","manager","admin"].includes(role) && (
           <StatCard label="Alertes stock" value={stockAlerte} icon="⚠️" color={stockAlerte>0?C.danger:C.success} delay={240}/>
         )}
         {["manager","admin"].includes(role) && (
@@ -107,7 +107,7 @@ const DashboardScreen = ({ role, tables, orders, products, movements, toast }) =
               <div key={t.id} style={{ width:60, height:60, borderRadius:10, background:st.bg,
                 border:`1px solid ${st.color}50`, display:"flex", flexDirection:"column",
                 alignItems:"center", justifyContent:"center", gap:4 }}>
-                <span style={{ fontSize:11, fontWeight:700, color:st.color }}>T{t.numero}</span>
+                <span style={{ fontSize:11, fontWeight:700, color:st.color }}>{t.numero}</span>
                 <Dot color={st.color} size={6}/>
               </div>
             );

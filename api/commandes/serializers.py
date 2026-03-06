@@ -28,6 +28,7 @@ class OrderItemSerializer(serializers.Serializer):
 class OrderInTableSerializer(serializers.ModelSerializer):
     """Serializer allégé pour commandes dans le détail de table"""
     id = serializers.CharField(source='order_id', read_only=True)
+    num_id = serializers.IntegerField(source='id', read_only=True)
     table_id = serializers.IntegerField(source='table.id', read_only=True)
     table_num = serializers.CharField(source='table.numero', read_only=True)
     serveur = serializers.CharField(source='serveur.get_full_name', read_only=True)
@@ -42,7 +43,7 @@ class OrderInTableSerializer(serializers.ModelSerializer):
     class Meta:
         model = Commande
         fields = [
-            'id', 'table_id', 'table_num', 'serveur', 'cuisinier',
+            'id', 'table_id', 'num_id', 'table_num', 'serveur', 'cuisinier',
             'items', 'status', 'montant', 'obs', 'motif', 'created_at'
         ]
 
@@ -127,6 +128,7 @@ class OrderCreateSerializer(serializers.Serializer):
 class OrderSerializer(serializers.ModelSerializer):
     """Serializer complet pour une commande"""
     id = serializers.CharField(source='order_id', read_only=True)
+    num_id = serializers.IntegerField(source='id', read_only=True)
     table_id = serializers.IntegerField(source='table.id', read_only=True)
     table_num = serializers.CharField(source='table.numero', read_only=True)
     serveur = serializers.CharField(source='serveur.get_full_name', read_only=True)
@@ -142,7 +144,7 @@ class OrderSerializer(serializers.ModelSerializer):
     class Meta:
         model = Commande
         fields = [
-            'id', 'table_id', 'table_num', 'serveur', 'cuisinier',
+            'id', 'table_id', 'num_id', 'table_num', 'serveur', 'cuisinier',
             'items', 'status', 'montant', 'obs', 'motif',
             'created_at', 'updated_at'
         ]
