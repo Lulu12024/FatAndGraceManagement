@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { C, ORDER_STATUS, now, timeAgo } from "../styles/tokens";
+import { C, ORDER_STATUS, timeAgo } from "../styles/tokens";
 import { ordersService } from "../api/orders";
-import { movementsService , demandesService  } from "../api/stock";
+import { demandesService } from "../api/stock";
 import { Card, Badge, Btn, Modal, Input, Empty } from "../components/ui";
 import { handleApiError } from "../hooks/index";
 
@@ -23,7 +23,13 @@ const TABS = [
   { v: "ALL",                    l: "Toutes"         },
 ];
 
-const KitchenScreen = ({ orders, setOrders, products, movements, setMovements, role, toast, user }) => {
+const KitchenScreen = ({
+  orders, setOrders,
+  products,
+  demandes, setDemandes,   // ← requis depuis App.jsx
+  movements, setMovements,
+  role, toast, user,
+}) => {
   const [filter, setFilter]         = useState("EN_ATTENTE_ACCEPTATION");
   const [rejectId, setRejectId]     = useState(null);
   const [motifRefus, setMotifRefus] = useState("");
@@ -31,14 +37,23 @@ const KitchenScreen = ({ orders, setOrders, products, movements, setMovements, r
   const [stockItems, setStockItems] = useState([]);
   const [loading, setLoading]       = useState(false);
 
-  /* Filtre sur les valeurs API brutes (sans accents) */
-  const visible = orders.filter(o =>
+  const visible  = orders.filter(o =>
     filter === "ALL"
-      ? !["ANNULEE", "REFUSEE"].includes(o.status)
+      ? !["ANNULEE","REFUSEE"].includes(o.status)
       : o.status === filter
   );
-
   const countFor = (s) => orders.filter(o => o.status === s).length;
+
+  /* ── Vérifie si la commande a une demande stock EN_ATTENTE ── */
+  const hasPendingDemande = (orderId) => {
+    if (!demandes?.length) return false;
+    return demandes.some(d =>
+      d.statut === "EN_ATTENTE" && (
+        d.motif?.includes(String(orderId)) ||
+        d.justification?.includes(String(orderId))
+      )
+    );
+  };
 
   /* ── Accepter ── */
   const doAccept = async (numId) => {
@@ -62,8 +77,7 @@ const KitchenScreen = ({ orders, setOrders, products, movements, setMovements, r
       setOrders(p => p.map(o =>
         o.num_id === rejectId ? { ...o, status: "REFUSEE", motif: motifRefus } : o
       ));
-      setRejectId(null);
-      setMotifRefus("");
+      setRejectId(null); setMotifRefus("");
       toast.error("Commande refusée", "Serveur notifié");
     } catch(err) { handleApiError(err, toast); }
     finally { setLoading(false); }
@@ -88,14 +102,15 @@ const KitchenScreen = ({ orders, setOrders, products, movements, setMovements, r
     setLoading(true);
     try {
       for (const si of stockItems) {
-        await demandesService.create({
-          produit:       si.id,
-          quantite:      si.qte,          // ← "quantite" pas "qte"
-          justification: `Commande ${stockReqId}`,
+        const nouvelle = await demandesService.create({
+          produit:  si.id,
+          quantite: si.qte,
+          motif:    `Commande ${stockReqId}`,
         });
+        // Ajoute localement pour bloquer le bouton immédiatement
+        if (setDemandes) setDemandes(prev => [...(prev ?? []), nouvelle]);
       }
-      setStockReqId(null);
-      setStockItems([]);
+      setStockReqId(null); setStockItems([]);
       toast.success("Demande soumise", "Gestionnaire notifié pour validation");
     } catch(err) { handleApiError(err, toast); }
     finally { setLoading(false); }
@@ -121,8 +136,7 @@ const KitchenScreen = ({ orders, setOrders, products, movements, setMovements, r
             {f.v !== "ALL" && countFor(f.v) > 0 && (
               <span style={{
                 background: f.v === "EN_ATTENTE_ACCEPTATION" ? C.warning
-                          : f.v === "EN_ATTENTE_LIVRAISON"   ? C.gold
-                          : C.info,
+                          : f.v === "EN_ATTENTE_LIVRAISON"   ? C.gold : C.info,
                 color: "#000", borderRadius: 10,
                 padding: "0 6px", fontSize: 10, fontWeight: 700, lineHeight: "16px",
               }}>
@@ -139,7 +153,9 @@ const KitchenScreen = ({ orders, setOrders, products, movements, setMovements, r
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 14 }}>
           {visible.map((o, i) => {
-            const ost = STATUS_DISPLAY[o.status] || {};
+            const ost     = STATUS_DISPLAY[o.status] || {};
+            const pending = hasPendingDemande(o.id);
+
             return (
               <Card key={o.id} className="anim-fadeUp"
                 style={{ padding: 0, overflow: "hidden", animationDelay: `${i * 45}ms` }}>
@@ -155,9 +171,7 @@ const KitchenScreen = ({ orders, setOrders, products, movements, setMovements, r
                         {(o.created_at ?? o.createdAt) && ` · ${timeAgo(o.created_at ?? o.createdAt)}`}
                       </div>
                     </div>
-                    <Badge color={ost?.color}>
-                      {ost?.label ?? o.status}
-                    </Badge>
+                    <Badge color={ost?.color}>{ost?.label ?? o.status}</Badge>
                   </div>
 
                   {/* Items */}
@@ -192,40 +206,68 @@ const KitchenScreen = ({ orders, setOrders, products, movements, setMovements, r
                     </div>
                   )}
 
-                  {/* Actions */}
-                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap" }}>
+                  {/* ── Actions ── */}
+                  <div style={{ display: "flex", gap: 6, flexWrap: "wrap", alignItems: "center" }}>
+
+                    {/* À accepter */}
                     {o.status === "EN_ATTENTE_ACCEPTATION" && (
                       <>
                         <Btn small variant="success" loading={loading}
                           onClick={() => doAccept(o.num_id)}>
                           ✓ Accepter
                         </Btn>
-                        <Btn small variant="danger"
-                          onClick={() => setRejectId(o.num_id)}>
+                        <Btn small variant="danger" onClick={() => setRejectId(o.num_id)}>
                           ✕ Refuser
                         </Btn>
                       </>
                     )}
+
+                    {/* En préparation */}
                     {o.status === "EN_PREPARATION" && (
-                      <>
-                        <Btn small loading={loading}
-                          style={{ background: C.goldFaint, color: C.goldL, border: `1px solid ${C.goldBorder}` }}
-                          onClick={() => doReady(o.num_id)}>
-                          Marquer prête
-                        </Btn>
-                        <Btn small variant="ghost"
-                          onClick={() => setStockReqId(o.num_id)}>
-                          📦 Demander stock
-                        </Btn>
-                      </>
+                      <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
+
+                        {/* Bannière d'alerte si demande en attente */}
+                        {pending && (
+                          <div style={{
+                            display: "flex", alignItems: "center", gap: 6,
+                            background: "rgba(245,158,11,0.1)",
+                            border: "1px solid rgba(245,158,11,0.3)",
+                            borderRadius: 7, padding: "6px 10px",
+                            fontSize: 11, color: C.warning,
+                          }}>
+                            ⏳ Demande stock en attente de validation
+                          </div>
+                        )}
+
+                        <div style={{ display: "flex", gap: 6 }}>
+                          <Btn small loading={loading}
+                            disabled={pending}
+                            onClick={() => !pending && doReady(o.num_id)}
+                            style={{
+                              background:  pending ? "rgba(255,255,255,0.04)" : C.goldFaint,
+                              color:       pending ? C.muted : C.goldL,
+                              border:      `1px solid ${pending ? "rgba(255,255,255,0.08)" : C.goldBorder}`,
+                              cursor:      pending ? "not-allowed" : "pointer",
+                              opacity:     pending ? 0.55 : 1,
+                            }}>
+                            {pending ? "⏳ Stock en attente" : "✓ Marquer prête"}
+                          </Btn>
+                          <Btn small variant="ghost"
+                            onClick={() => setStockReqId(o.id)}>
+                            📦 Demander stock
+                          </Btn>
+                        </div>
+                      </div>
                     )}
+
+                    {/* Prête — attente serveur */}
                     {o.status === "EN_ATTENTE_LIVRAISON" && (
                       <div style={{ fontSize: 11, color: C.gold, padding: "4px 0" }}>
                         ✓ Prête — en attente du serveur
                       </div>
                     )}
-                  </div>
 
+                  </div>
                 </div>
               </Card>
             );
@@ -237,14 +279,8 @@ const KitchenScreen = ({ orders, setOrders, products, movements, setMovements, r
       <Modal open={!!rejectId} onClose={() => { setRejectId(null); setMotifRefus(""); }}
         title="Refuser la commande">
         <div style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-          <Input
-            label="Motif de refus *"
-            value={motifRefus}
-            onChange={setMotifRefus}
-            placeholder="Ex: Ingrédient manquant…"
-            required
-            textarea
-          />
+          <Input label="Motif de refus *" value={motifRefus} onChange={setMotifRefus}
+            placeholder="Ex: Ingrédient manquant…" required textarea/>
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
             <Btn variant="ghost" onClick={() => setRejectId(null)}>Annuler</Btn>
             <Btn variant="danger" loading={loading} onClick={doReject} disabled={!motifRefus}>
@@ -255,7 +291,8 @@ const KitchenScreen = ({ orders, setOrders, products, movements, setMovements, r
       </Modal>
 
       {/* ── Modal demande de stock ── */}
-      <Modal open={!!stockReqId} onClose={() => { setStockReqId(null); setStockItems([]); }}
+      <Modal open={!!stockReqId}
+        onClose={() => { setStockReqId(null); setStockItems([]); }}
         title="Demande de sortie de stock">
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <p style={{ fontSize: 12, color: C.muted }}>
@@ -275,8 +312,7 @@ const KitchenScreen = ({ orders, setOrders, products, movements, setMovements, r
                   </div>
                   {sel ? (
                     <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                      <input
-                        type="number" value={sel.qte} min="0.1" step="0.1" max={p.qte}
+                      <input type="number" value={sel.qte} min="0.1" step="0.1" max={p.qte}
                         onChange={e => setStockItems(prev =>
                           prev.map(s => s.id === sel.id ? { ...s, qte: Number(e.target.value) } : s)
                         )}
@@ -285,8 +321,7 @@ const KitchenScreen = ({ orders, setOrders, products, movements, setMovements, r
                           border: `1px solid ${C.goldBorder}`,
                           borderRadius: 6, padding: "3px 7px",
                           color: C.cream, fontSize: 12,
-                        }}
-                      />
+                        }}/>
                       <span style={{ fontSize: 10, color: C.muted }}>{p.unite}</span>
                       <Btn small variant="danger"
                         onClick={() => setStockItems(prev => prev.filter(s => s.id !== sel.id))}>

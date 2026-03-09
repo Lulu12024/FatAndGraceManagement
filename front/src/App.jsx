@@ -9,7 +9,7 @@ import { authService } from "./api/auth";
 import { tablesService } from "./api/tables";
 import { ordersService } from "./api/orders";
 import { productsService, movementsService } from "./api/stock";
-import { invoicesService, usersService, auditService, reportsService, notificationsService } from "./api/services";
+import { invoicesService, usersService, auditService, reportsService, notificationsService, demandesService } from "./api/services";
 import { MOCK_TABLES, MOCK_ORDERS, MOCK_PRODUCTS, MOCK_MOVEMENTS, MOCK_INVOICES, MOCK_AUDIT, MOCK_USERS, MOCK_PLATS, ROLES } from "./mock";
 import { unwrap } from "./api/client";
 import { platsService } from "./api/plats"; 
@@ -36,6 +36,7 @@ import TeamScreen from "./screens/TeamScreen";
 import AuditScreen from "./screens/AuditScreen";
 import StatsScreen from "./screens/StatsScreen";
 import PlatsScreen from "./screens/PlatsScreen";
+import DemandesScreen from "./screens/DemandesScreen";
 
 export default function App() {
   useEffect(() => { injectGlobalCSS(); }, []);
@@ -60,7 +61,7 @@ export default function App() {
   const [products,  setProducts]  = useState(MOCK_PRODUCTS);
   const [movements, setMovements] = useState(MOCK_MOVEMENTS);
   const [plats, setPlats] = useState(MOCK_PLATS);
-
+  const [demandes, setDemandes] = useState([]);
   // const invoices = MOCK_INVOICES;
   const [invoices, setInvoices] = useState(MOCK_INVOICES);
   // const plats    = MOCK_PLATS;
@@ -75,6 +76,7 @@ export default function App() {
       movementsService.list().then(d => { if(d) setMovements(unwrap(d)); }),
       platsService.list().then(d    => {  if (d) setPlats(Array.isArray(d) ? d : (d.results ?? [])); }),
       invoicesService.list().then(d => { if(d) setInvoices(Array.isArray(d) ? d : (d.results ?? [])); }),
+      demandesService.list().then(d => { if(d) setDemandes(Array.isArray(d) ? d : (d.results ?? [])); }),
     ]).catch(() => {
       // Mock data already set — graceful degradation
     });
@@ -150,7 +152,7 @@ export default function App() {
       .toLowerCase()
       .replace("gestionnaire de stock", "gestionnaire")
       .replace("administrateur", "admin")
-      .replace("gérant", "gerant");
+      .replace("gerant", "gérant");
       
     const role = normalizedRole;
     const sharedProps = { role, toast };
@@ -160,7 +162,7 @@ export default function App() {
     switch(screen) {
       case "dashboard":     return <DashboardScreen {...sharedProps} tables={tables} orders={orders} products={products} movements={movements}/>;
       case "tables":        return <TablesScreen {...sharedProps} tables={tables} setTables={setTables} orders={orders} onSelectTable={handleSelTable}/>;
-      case "kitchen":       return <KitchenScreen {...sharedProps} orders={orders} setOrders={setOrders} products={products} movements={movements} setMovements={setMovements}/>;
+      case "kitchen":       return <KitchenScreen {...sharedProps} orders={orders} setOrders={setOrders} products={products} movements={movements} setMovements={setMovements} demandes={demandes} setDemandes={setDemandes}/>;
       case "orders":        return <OrdersListScreen {...sharedProps} orders={orders} setOrders={setOrders} tables={tables}/>;
       case "stock":         return <StockScreen {...sharedProps} products={products} setProducts={setProducts} movements={movements} setMovements={setMovements}/>;
       case "stock-entries": return <StockEntriesScreen {...sharedProps} products={products} movements={movements} setMovements={setMovements}/>;
@@ -171,8 +173,14 @@ export default function App() {
       case "invoices":      return <InvoicesScreen {...sharedProps}/>;
       case "reports":       return <ReportsScreen {...sharedProps} orders={orders} products={products} movements={movements} invoices={invoices}/>;
       case "team":          return <TeamScreen {...sharedProps}/>;
+      case "table-detail": {
+        const liveTable = tables.find(t => t.id === selTable?.id) ?? selTable;
+        return <TableDetailScreen {...sharedProps} table={liveTable} 
+          orders={orders} setOrders={setOrders} setTables={setTables} plats={plats}/>;
+      }
       case "audit":         return <AuditScreen {...sharedProps}/>;
       case "stats":         return <StatsScreen {...sharedProps} orders={orders}/>;
+      case "demandes":      return <DemandesScreen {...sharedProps}/>;
       case "menu":          return <PlatsScreen role={role} toast={toast} plats={plats} setPlats={setPlats}/>;
       default:              return <DashboardScreen {...sharedProps} tables={tables} orders={orders} products={products} movements={movements}/>;
     }

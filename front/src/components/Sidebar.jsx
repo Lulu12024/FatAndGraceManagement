@@ -15,7 +15,7 @@ const NAV = {
     { id:"stock-request",icon:"◉",  label:"Demande stock" },
     { id:"stats",        icon:"◎",  label:"Mes statistiques" },
   ],
-  gerant:       [ 
+  gérant:       [ 
     { id:"dashboard",    icon:"▦",  label:"Tableau de bord" },
     { id:"tables",       icon:"⬚",  label:"Tables" },
     { id:"orders",       icon:"≡",   label:"Commandes" },
@@ -28,6 +28,7 @@ const NAV = {
   gestionnaire: [
     { id:"dashboard",    icon:"▦",  label:"Tableau de bord" },
     { id:"stock",        icon:"◉",  label:"Stock" },
+    { id:"demandes",     icon:"📋", label:"Demandes cuisiniers" },
     { id:"stock-entries",icon:"⊕",  label:"Entrées" },
     { id:"stock-exits",  icon:"⊖",  label:"Sorties" },
     { id:"stock-history",icon:"≡",  label:"Historique" },
