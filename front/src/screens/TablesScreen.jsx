@@ -15,18 +15,17 @@ const STATUS_MAP = {
 const ADMIN_ROLES = ["admin", "administrateur", "manager", "gérant"];
 
 const TablesScreen = ({ tables, setTables, orders, role, onSelectTable, toast }) => {
-  const [filter, setFilter]     = useState("ALL");
-  const [busy, setBusy]         = useState(null);
-  const [showAdd, setShowAdd]   = useState(false);
+  const [filter, setFilter]         = useState("ALL");
+  const [busy, setBusy]             = useState(null);
+  const [showAdd, setShowAdd]       = useState(false);
   const [loadingAdd, setLoadingAdd] = useState(false);
-  const [form, setForm]         = useState({ numero: "", capacite: "", description: "" });
+  const [form, setForm]             = useState({ numero: "", capacite: "", description: "" });
 
-  // const filtered = filter === "ALL" ? tables : tables.filter(t => t.status === filter);
   const filtered = filter === "ALL"
     ? tables
     : tables.filter(t => (STATUS_MAP[t.status] ?? t.status) === filter);
-    
-  const isAdmin  = ADMIN_ROLES.includes(role);
+
+  const isAdmin = ADMIN_ROLES.includes(role);
 
   /* ── Réserver / Annuler ── */
   const doAction = async (t, action) => {
@@ -51,17 +50,23 @@ const TablesScreen = ({ tables, setTables, orders, role, onSelectTable, toast })
   /* ── Créer une table ── */
   const createTable = async () => {
     if (!form.numero || !form.capacite) { toast.warning("", "Numéro et capacité requis"); return; }
+
+    // Construire le nom final et vérifier le doublon avant tout appel API
+    const numeroFormate = `TABLE ${form.numero.trim()}`;
+    const existe = tables.some(t => t.numero?.trim().toLowerCase() === numeroFormate.toLowerCase());
+    if (existe) { toast.warning("Doublon", `${numeroFormate} existe déjà`); return; }
+
     setLoadingAdd(true);
     try {
       const newT = await tablesService.create({
-        numero:      form.numero,
+        numero:      numeroFormate,
         capacite:    Number(form.capacite),
         description: form.description || undefined,
       });
       setTables(p => [...p, { ...newT, status: newT.status ?? "DISPONIBLE" }]);
       setForm({ numero: "", capacite: "", description: "" });
       setShowAdd(false);
-      toast.success("Table créée", `Table ${form.numero} ajoutée`);
+      toast.success("Table créée", `${numeroFormate} ajoutée`);
     } catch (err) {
       handleApiError(err, toast);
     } finally {
@@ -109,7 +114,6 @@ const TablesScreen = ({ tables, setTables, orders, role, onSelectTable, toast })
             ))}
         </div>
 
-        {/* Bouton visible uniquement pour Admin / Manager / Gérant */}
         {isAdmin && (
           <Btn onClick={() => setShowAdd(true)}>+ Nouvelle table</Btn>
         )}
@@ -122,6 +126,9 @@ const TablesScreen = ({ tables, setTables, orders, role, onSelectTable, toast })
           const st    = TABLE_STATUS[stKey] || TABLE_STATUS.DISPONIBLE;
 
           const tOrders = orders.filter(o => o.tableId === t.id && !["LIVRÉE", "ANNULÉE", "REFUSÉE"].includes(o.status));
+          const tActiveOrders = orders.filter(o => o.tableId === t.id && !["ANNULÉE", "REFUSÉE"].includes(o.status));
+          const tTotal = tActiveOrders.reduce((s, o) => s + (o.montant || 0), 0);
+
           return (
             <Card key={t.id} className="hover-lift anim-fadeUp"
               style={{ padding: 0, overflow: "hidden", cursor: "pointer", animationDelay: `${i * 35}ms`, border: `1px solid ${st.color}35` }}
@@ -139,10 +146,10 @@ const TablesScreen = ({ tables, setTables, orders, role, onSelectTable, toast })
                   <Badge color={st.color} style={{ fontSize: 10 }}>{st.label}</Badge>
                 </div>
 
-                {t.montant > 0 && (
+                {tTotal > 0 && (
                   <div style={{ marginBottom: 12, padding: "8px 11px", background: C.goldFaint, borderRadius: 8, border: `1px solid ${C.goldBorder}` }}>
                     <div style={{ fontSize: 10, color: C.muted }}>Total en cours</div>
-                    <div className="serif" style={{ fontSize: 16, fontWeight: 700, color: C.goldL, marginTop: 1 }}>{fmt(t.montant)}</div>
+                    <div className="serif" style={{ fontSize: 16, fontWeight: 700, color: C.goldL, marginTop: 1 }}>{fmt(tTotal)}</div>
                   </div>
                 )}
 
@@ -160,7 +167,6 @@ const TablesScreen = ({ tables, setTables, orders, role, onSelectTable, toast })
                     <Btn small variant="danger" loading={busy === t.id} onClick={() => doAction(t, "cancel")}>Annuler</Btn>
                   )}
                   <Btn small variant="ghost" onClick={() => onSelectTable(t)}>Détail →</Btn>
-                  {/* Supprimer — admin/manager/gérant uniquement, table DISPONIBLE uniquement */}
                   {isAdmin && t.status === "DISPONIBLE" && (
                     <Btn small variant="danger" loading={busy === t.id} onClick={(e) => deleteTable(t, e)}>🗑</Btn>
                   )}
@@ -172,14 +178,27 @@ const TablesScreen = ({ tables, setTables, orders, role, onSelectTable, toast })
       </div>
 
       {/* Modal création de table */}
-      <Modal open={showAdd} onClose={() => setShowAdd(false)} title="Nouvelle table">
+      <Modal open={showAdd} onClose={() => { setShowAdd(false); setForm({ numero: "", capacite: "", description: "" }); }} title="Nouvelle table">
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+
+          {/* Aperçu du nom final */}
+          {form.numero && (
+            <div style={{
+              padding: "8px 12px", borderRadius: 8,
+              background: C.goldFaint, border: `1px solid ${C.goldBorder}`,
+              fontSize: 12, color: C.goldL,
+            }}>
+              ✦ Sera créée comme : <strong>TABLE {form.numero.trim()}</strong>
+            </div>
+          )}
+
           <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
             <Input
               label="Numéro *"
+              type="number"
               value={form.numero}
               onChange={v => setForm(f => ({ ...f, numero: v }))}
-              placeholder="ex: 5"
+              placeholder="ex: 6"
               required
             />
             <Input
@@ -198,7 +217,7 @@ const TablesScreen = ({ tables, setTables, orders, role, onSelectTable, toast })
             placeholder="ex: Terrasse, Fenêtre, VIP..."
           />
           <div style={{ display: "flex", gap: 10, justifyContent: "flex-end" }}>
-            <Btn variant="ghost" onClick={() => setShowAdd(false)}>Annuler</Btn>
+            <Btn variant="ghost" onClick={() => { setShowAdd(false); setForm({ numero: "", capacite: "", description: "" }); }}>Annuler</Btn>
             <Btn loading={loadingAdd} onClick={createTable} disabled={!form.numero || !form.capacite}>
               Créer la table
             </Btn>

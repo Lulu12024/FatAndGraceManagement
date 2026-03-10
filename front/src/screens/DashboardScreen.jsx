@@ -4,10 +4,10 @@ import { Card, StatCard, Badge, Dot, Empty } from "../components/ui";
 
 const DashboardScreen = ({ role, tables, orders, products, movements, toast }) => {
   const tablesDispos    = tables.filter(t=>t.status==="DISPONIBLE").length;
-  const tablesEnService = tables.filter(t=>t.status==="EN_SERVICE").length;
   const cmdActives      = orders.filter(o=>!["LIVRÉE","ANNULÉE","REFUSÉE"].includes(o.status)).length;
+  const cmdEnPrepa      = orders.filter(o=>o.status==="EN_PREPARATION").length;
   const cmdPrêtes       = orders.filter(o=>o.status==="EN_ATTENTE_LIVRAISON").length;
-  const cmdEnAttente    = orders.filter(o=>o.status==="EN_ATTENTE_ACCEPTATION").length;
+  const cmdNonTraitees  = orders.filter(o=>o.status==="EN_ATTENTE_ACCEPTATION").length;
   const stockAlerte     = products.filter(p=>p.qte<p.seuil).length;
   const mvtPending      = movements.filter(m=>m.statut==="EN_ATTENTE").length;
 
@@ -23,10 +23,12 @@ const DashboardScreen = ({ role, tables, orders, products, movements, toast }) =
 
       {/* KPI Grid */}
       <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(160px,1fr))", gap:14, marginBottom:26 }}>
-        <StatCard label="Tables disponibles" value={tablesDispos} icon="🪑" color={C.success} sub={`/${tables.length} tables`} delay={0}/>
-        <StatCard label="En service" value={tablesEnService} icon="🍽️" color={C.warning} delay={60}/>
-        <StatCard label="Commandes actives" value={cmdActives} icon="📋" color={C.info} sub={`${cmdPrêtes} prêtes`} delay={120}/>
-        {cmdEnAttente > 0 && <StatCard label="En attente cuisine" value={cmdEnAttente} icon="⏳" color={C.gold} delay={180}/>}
+        <StatCard label="Tables disponibles"        value={tablesDispos}   icon="🪑" color={C.success} sub={`/${tables.length} tables`} delay={0}/>
+        <StatCard label="Commandes actives"         value={cmdActives}     icon="📋" color={C.info}    sub={`${cmdPrêtes} prêtes`}       delay={60}/>
+        <StatCard label="Commandes en préparation"  value={cmdEnPrepa}     icon="🍳" color={C.warning} delay={120}/>
+        {cmdNonTraitees > 0 && (
+          <StatCard label="Commandes non traitées"  value={cmdNonTraitees} icon="⏳" color={C.gold}    delay={180}/>
+        )}
         {["gestionnaire","gérant","manager","admin"].includes(role) && (
           <StatCard label="Alertes stock" value={stockAlerte} icon="⚠️" color={stockAlerte>0?C.danger:C.success} delay={240}/>
         )}
@@ -40,7 +42,7 @@ const DashboardScreen = ({ role, tables, orders, products, movements, toast }) =
         <Card style={{ overflow:"hidden" }}>
           <div style={{ padding:"15px 20px", borderBottom:`1px solid rgba(255,255,255,0.05)`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
             <span className="serif" style={{ fontSize:15, color:C.cream }}>Commandes récentes</span>
-            {cmdEnAttente > 0 && <Badge color={C.warning}>{cmdEnAttente} en attente</Badge>}
+            {cmdNonTraitees > 0 && <Badge color={C.warning}>{cmdNonTraitees} non traitées</Badge>}
           </div>
           <div style={{ maxHeight:296, overflowY:"auto" }}>
             {orders.length === 0 ? <Empty icon="📋" text="Aucune commande"/> : orders.slice(0,8).map(o => {
@@ -124,9 +126,5 @@ const DashboardScreen = ({ role, tables, orders, products, movements, toast }) =
     </div>
   );
 };
-
-/* ══════════════════════════════════════════════════════════
-   TABLES SCREEN
-   ══════════════════════════════════════════════════════════ */
 
 export default DashboardScreen;
