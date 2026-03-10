@@ -56,9 +56,9 @@ const LoginScreen = ({ onLogin, toast }) => {
               Se connecter
             </Btn>
 
-            <Divider label="Comptes de démonstration"/>
+            {/* <Divider label="Comptes de démonstration"/> */}
 
-            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
+            {/* <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr 1fr", gap:6 }}>
               {Object.entries({ admin:"Admin", gérant:"Gérant", manager:"Manager", serveur:"Serveur", cuisinier:"Cuisinier", gestionnaire:"Gest. Stock" }).map(([role, label]) => (
                 <button key={role} onClick={()=>{ const u = MOCK_USERS.find(x=>x.role===role); if(u){ setLogin(u.login); setPassword("demo"); }}}
                   style={{ background:C.bg3, border:`1px solid rgba(255,255,255,0.08)`, color:C.mutedL,
@@ -67,7 +67,7 @@ const LoginScreen = ({ onLogin, toast }) => {
                   {label}
                 </button>
               ))}
-            </div>
+            </div> */}
           </div>
         </Card>
 
