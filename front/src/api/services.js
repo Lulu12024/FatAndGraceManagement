@@ -8,6 +8,8 @@
  */
 import { api, downloadFile, unwrap } from "./client";
 import { MOCK_INVOICES } from "../mock";
+import { MOCK_USERS } from "../mock";   // ← déplacer depuis ligne ~55
+import { MOCK_AUDIT } from "../mock";  
 
 export const invoicesService = {
   async list(params = {}) {
@@ -52,7 +54,6 @@ export const invoicesService = {
    POST   /api/users/{id}/toggle/   → User  (activer/désactiver)
    POST   /api/users/{id}/reset-password/ { new_password } → 200
    ══════════════════════════════════════════════════════════ */
-import { MOCK_USERS } from "../mock";
 
 export const usersService = {
   async list() {
@@ -117,7 +118,7 @@ export const usersService = {
    GET    /api/audit-logs/          ?user=&action=&date_from=&date_to= → Log[]
    GET    /api/audit-logs/export/   ?format=csv|excel|txt              → file
    ══════════════════════════════════════════════════════════ */
-import { MOCK_AUDIT } from "../mock";
+
 
 export const auditService = {
   async list(params = {}) {

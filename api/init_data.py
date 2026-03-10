@@ -11,7 +11,7 @@ import django
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'stock_management.settings')
 django.setup()
 
-from commandes.models import StatutCommande, Table
+from commandes.models import  Table
 from stocks.models import TypeMouvement, StatutMouvement, StatutDemande, Unite
 from users.models import Role
 
@@ -169,13 +169,13 @@ def run_all():
     print()
     
     try:
-        init_statuts_commande()
+        # init_statuts_commande()
         init_types_mouvement()
         init_statuts_mouvement()
         init_statuts_demande()
-        init_roles()
+        # init_roles()
         init_unites()
-        init_tables()
+        # init_tables()
         
         print("=" * 60)
         print("✅ INITIALISATION TERMINÉE AVEC SUCCÈS!")

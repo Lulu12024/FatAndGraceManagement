@@ -156,7 +156,23 @@ SIMPLE_JWT = {
 #     'AUTH_HEADER_TYPES': ('Bearer',),
 # }
 
+# {
+#     "KEY": "django-insecure-%ckybrzgg-oms^kg2^m*3sp)zgjzrjeg18ww7h+5k5u0l8#3=w",
+#     "SALT": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",
+#     "NAME": "stock_db",
+#     "USER": "postgres",
+#     "HOST": "localhost",
+#     "PORT": "5432",
+#     "PASS": "#!@dm1n!#",
+    
+#     "JWT_ACCESS_TOKEN_LIFETIME": 60,
+#     "JWT_REFRESH_TOKEN_LIFETIME": 1440,
 
+#     "REDIS_HOST": "localhost",
+#     "REDIS_PORT": 6379,
+#     "ALLOWED_HOSTS": "*"
+
+# }
 
 SPECTACULAR_SETTINGS = {
     'TITLE': 'Stock Management API',
@@ -165,20 +181,24 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
 }
 
+# CORS_ALLOWED_ORIGINS = [
+#     "http://localhost:3000",
+#     "http://localhost:8080",
+#     "http://127.0.0.1:3000",
+#     "http://127.0.0.1:8080",
+#     "http://localhost:5500",
+#     "http://127.0.0.1:5500",
+#     "http://10.64.10.53:3000",
+#     "https://fatandgracemanagement-front.onrender.com"
+# ]
 CORS_ALLOWED_ORIGINS = [
-    "http://localhost:3000",
-    "http://localhost:8080",
-    "http://127.0.0.1:3000",
-    "http://127.0.0.1:8080",
-    "http://localhost:5500",
-    "http://127.0.0.1:5500",
+    "https://fatandgracemanagement-front.onrender.com",
 ]
-
 CORS_ALLOW_CREDENTIALS = True
-
+CORS_ALLOW_ALL_ORIGINS = True  # Permettre toutes les origines (à restreindre en production)
 # En mode DEBUG, autoriser toutes les origines pour faciliter les tests
-if DEBUG:
-    CORS_ALLOW_ALL_ORIGINS = True
+# if DEBUG:
+#     CORS_ALLOW_ALL_ORIGINS = True
 
 CHANNEL_LAYERS = {
     'default': {

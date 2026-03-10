@@ -4,12 +4,18 @@
  * Base URL configurée via variable d'environnement React.
  */
 
-export const BASE_URL = process.env.REACT_APP_API_URL || "http://localhost:8000/api";
+// export const BASE_URL = process.env.REACT_APP_API_URL || "http://10.64.10.53:8001/api";
+
+export const BASE_URL = process.env.REACT_APP_API_URL || "https://fate-and-grace-api.onrender.com/api";
 
 /* ─── Token helpers ─────────────────────────────────── */
 export const getToken = () => localStorage.getItem("fg_token");
 export const setToken = (t) => localStorage.setItem("fg_token", t);
 export const clearToken = () => localStorage.removeItem("fg_token");
+
+export const getUser  = () => { try { return JSON.parse(localStorage.getItem("fg_user")); } catch { return null; } };
+export const setUser  = (u) => localStorage.setItem("fg_user", JSON.stringify(u));
+export const clearUser = () => localStorage.removeItem("fg_user");
 
 /* ─── Core request ──────────────────────────────────── */
 async function request(method, path, body = null, options = {}) {

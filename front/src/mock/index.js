@@ -153,7 +153,7 @@ export const MOCK_AUDIT = [
 export const ROLES = {
   serveur:       "Serveur",
   cuisinier:     "Cuisinier",
-  gerant:        "Gérant",
+  gérant:        "Gérant",
   gestionnaire:  "Gestionnaire de Stock",
   manager:       "Manager",
   auditeur:      "Auditeur",

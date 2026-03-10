@@ -15,7 +15,7 @@ const NAV = {
     { id:"stock-request",icon:"◉",  label:"Demande stock" },
     { id:"stats",        icon:"◎",  label:"Mes statistiques" },
   ],
-  gerant:       [ 
+  gérant:       [ 
     { id:"dashboard",    icon:"▦",  label:"Tableau de bord" },
     { id:"tables",       icon:"⬚",  label:"Tables" },
     { id:"orders",       icon:"≡",   label:"Commandes" },
@@ -28,6 +28,7 @@ const NAV = {
   gestionnaire: [
     { id:"dashboard",    icon:"▦",  label:"Tableau de bord" },
     { id:"stock",        icon:"◉",  label:"Stock" },
+    { id:"demandes",     icon:"📋", label:"Demandes cuisiniers" },
     { id:"stock-entries",icon:"⊕",  label:"Entrées" },
     { id:"stock-exits",  icon:"⊖",  label:"Sorties" },
     { id:"stock-history",icon:"≡",  label:"Historique" },
@@ -129,15 +130,15 @@ const Sidebar = ({ role, screen, onNav, user, onLogout, collapsed, setCollapsed,
       {/* User footer */}
       <div style={{ padding:collapsed?"12px 0":"12px 14px", borderTop:`1px solid rgba(255,255,255,0.05)` }}>
         <div style={{ display:"flex", alignItems:"center", gap:10, justifyContent:collapsed?"center":"flex-start" }}>
-          <div style={{ width:34, height:34, borderRadius:10, background:`linear-gradient(135deg,${ROLE_COLORS[role]||C.gold}55,${C.bg4})`,
-            border:`1px solid ${ROLE_COLORS[role]||C.gold}40`, flexShrink:0, display:"flex",
+          <div style={{ width:34, height:34, borderRadius:10,background: `linear-gradient(135deg,${ROLE_COLORS[roleKey]||C.gold}55,${C.bg4})`,
+            border: `1px solid ${ROLE_COLORS[roleKey]||C.gold}40`, flexShrink:0, display:"flex",
             alignItems:"center", justifyContent:"center", fontSize:12, fontWeight:700, color:"#fff" }}>
-            {user.firstName?.[0]}{user.lastName?.[0]}
+            {user.first_name?.[0]}{user.last_name?.[0]}
           </div>
           {!collapsed && (
             <div style={{ flex:1, minWidth:0 }}>
-              <div style={{ fontSize:12, fontWeight:600, color:C.cream }} className="truncate">{user.firstName} {user.lastName}</div>
-              <div style={{ fontSize:10, color:C.muted }}>{ROLES[role]||role}</div>
+              <div style={{ fontSize:12, fontWeight:600, color:C.cream }} className="truncate">{user.first_name} {user.last_name}</div>
+              <div style={{ fontSize:10, color:C.muted }}>{ROLES[roleKey] || role}</div>
             </div>
           )}
           {!collapsed && (

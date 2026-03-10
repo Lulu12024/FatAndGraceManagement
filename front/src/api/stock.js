@@ -150,4 +150,42 @@ export const movementsService = {
       throw err;
     }
   },
+
+  
+};
+
+export const unitesService = {
+  async list() {
+    try {
+      return await api.get("/unites/");
+    } catch (err) {
+      if (err.isNetwork) return [];
+      throw err;
+    }
+  },
+};
+
+export const demandesService = {
+  async list() {
+    try {
+      const d = await api.get("/demandes/");
+      return Array.isArray(d) ? d : (d.results ?? []);
+    } catch (err) {
+      if (err.isNetwork) return [];
+      throw err;
+    }
+  },
+
+  async create(payload) {
+    // payload: { produit, quantite, motif }
+    return await api.post("/demandes/", payload);
+  },
+
+  async validate(id) {
+    return await api.post(`/demandes/${id}/validate/`, {});
+  },
+
+  async reject(id, motif) {
+    return await api.post(`/demandes/${id}/reject/`, { motif });
+  },
 };

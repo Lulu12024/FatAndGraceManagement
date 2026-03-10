@@ -12,10 +12,11 @@ const InvoicesScreen = ({ toast }) => {
   useEffect(() => {
     setLoading(true);
     invoicesService.list()
-      .then(data => { if(data) setInvoices(unwrap(data) ? data : (data.results ?? [])); })
-      .catch(()=>{})
-      .finally(()=>setLoading(false));
+      .then(data => { if (data) setInvoices(data.results ?? data); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
+
 
   const filtered = invoices.filter(inv => inv.id.toLowerCase().includes(search.toLowerCase()) || inv.tableNum.includes(search));
 
