@@ -44,16 +44,8 @@ const KitchenScreen = ({
   );
   const countFor = (s) => orders.filter(o => o.status === s).length;
 
-  /* ── Vérifie si la commande a une demande stock EN_ATTENTE ── */
-  const hasPendingDemande = (orderId) => {
-    if (!demandes?.length) return false;
-    return demandes.some(d =>
-      d.statut === "EN_ATTENTE" && (
-        d.motif?.includes(String(orderId)) ||
-        d.justification?.includes(String(orderId))
-      )
-    );
-  };
+  /* ── Bloque "Marquer prête" si au moins une demande stock est EN_ATTENTE ── */
+  const hasAnyPendingDemande = demandes?.some(d => d.statut === "EN_ATTENTE") ?? false;
 
   /* ── Accepter ── */
   const doAccept = async (numId) => {
@@ -85,6 +77,7 @@ const KitchenScreen = ({
 
   /* ── Marquer prête ── */
   const doReady = async (numId) => {
+    if (hasAnyPendingDemande) return; // garde supplémentaire
     setLoading(true);
     try {
       await ordersService.markReady(numId);
@@ -153,8 +146,7 @@ const KitchenScreen = ({
       ) : (
         <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(300px,1fr))", gap: 14 }}>
           {visible.map((o, i) => {
-            const ost     = STATUS_DISPLAY[o.status] || {};
-            const pending = hasPendingDemande(o.id);
+            const ost = STATUS_DISPLAY[o.status] || {};
 
             return (
               <Card key={o.id} className="anim-fadeUp"
@@ -227,7 +219,7 @@ const KitchenScreen = ({
                       <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
 
                         {/* Bannière d'alerte si demande en attente */}
-                        {pending && (
+                        {hasAnyPendingDemande && (
                           <div style={{
                             display: "flex", alignItems: "center", gap: 6,
                             background: "rgba(245,158,11,0.1)",
@@ -241,16 +233,17 @@ const KitchenScreen = ({
 
                         <div style={{ display: "flex", gap: 6 }}>
                           <Btn small loading={loading}
-                            disabled={pending}
-                            onClick={() => !pending && doReady(o.num_id)}
+                            disabled={hasAnyPendingDemande}
+                            onClick={() => doReady(o.num_id)}
                             style={{
-                              background:  pending ? "rgba(255,255,255,0.04)" : C.goldFaint,
-                              color:       pending ? C.muted : C.goldL,
-                              border:      `1px solid ${pending ? "rgba(255,255,255,0.08)" : C.goldBorder}`,
-                              cursor:      pending ? "not-allowed" : "pointer",
-                              opacity:     pending ? 0.55 : 1,
+                              background:  hasAnyPendingDemande ? "rgba(255,255,255,0.04)" : C.goldFaint,
+                              color:       hasAnyPendingDemande ? C.muted : C.goldL,
+                              border:      `1px solid ${hasAnyPendingDemande ? "rgba(255,255,255,0.08)" : C.goldBorder}`,
+                              cursor:      hasAnyPendingDemande ? "not-allowed" : "pointer",
+                              opacity:     hasAnyPendingDemande ? 0.55 : 1,
+                              pointerEvents: hasAnyPendingDemande ? "none" : "auto",
                             }}>
-                            {pending ? "⏳ Stock en attente" : "✓ Marquer prête"}
+                            {hasAnyPendingDemande ? "⏳ Stock en attente" : "✓ Marquer prête"}
                           </Btn>
                           <Btn small variant="ghost"
                             onClick={() => setStockReqId(o.id)}>

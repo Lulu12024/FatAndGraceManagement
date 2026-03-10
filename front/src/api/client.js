@@ -11,6 +11,10 @@ export const getToken = () => localStorage.getItem("fg_token");
 export const setToken = (t) => localStorage.setItem("fg_token", t);
 export const clearToken = () => localStorage.removeItem("fg_token");
 
+export const getUser  = () => { try { return JSON.parse(localStorage.getItem("fg_user")); } catch { return null; } };
+export const setUser  = (u) => localStorage.setItem("fg_user", JSON.stringify(u));
+export const clearUser = () => localStorage.removeItem("fg_user");
+
 /* ─── Core request ──────────────────────────────────── */
 async function request(method, path, body = null, options = {}) {
   const token = getToken();

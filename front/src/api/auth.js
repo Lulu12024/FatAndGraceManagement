@@ -8,7 +8,7 @@
  *   POST /api/auth/change-password/ { old_password, new_password } → 200
  */
 
-import { api, setToken, clearToken } from "./client";
+import { api, setToken, clearToken, setUser, clearUser } from "./client";
 import { MOCK_USERS } from "../mock";
 
 export const authService = {
@@ -21,16 +21,15 @@ export const authService = {
   async login(login, password) {
     try {
       const data = await api.post("/auth/login/", { login, password });
-      console.log("Login successful, received token:", data.token);
       setToken(data.token);
-      localStorage.setItem("fg_refresh_token", data.refresh);
-      return data; // { token, user }
+      setUser(data.user);   // ← AJOUTER cette ligne
+      return data;
     } catch (err) {
       if (err.isNetwork) {
-        // ── FALLBACK MOCK ──────────────────────────────────
         const user = MOCK_USERS.find((u) => u.login === login);
         if (!user) throw new Error("Identifiant introuvable");
         setToken("mock-token-" + Date.now());
+        setUser(user);       // ← AJOUTER cette ligne
         return { token: "mock", user };
       }
       throw err;
@@ -41,14 +40,8 @@ export const authService = {
    * Déconnexion (invalide le token côté serveur)
    */
   async logout() {
-    const refresh = localStorage.getItem("fg_refresh_token");
-    try {
-      await api.post("/auth/logout/", { refresh });
-    } catch (_) {}
-    finally {
-      clearToken();
-      localStorage.removeItem("fg_refresh_token");
-    }
+    try { await api.post("/auth/logout/", {}); } catch (_) {}
+    finally { clearToken(); clearUser(); }  // ← ajouter clearUser()
   },
 
   /**

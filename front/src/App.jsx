@@ -37,13 +37,15 @@ import AuditScreen from "./screens/AuditScreen";
 import StatsScreen from "./screens/StatsScreen";
 import PlatsScreen from "./screens/PlatsScreen";
 import DemandesScreen from "./screens/DemandesScreen";
+import { getUser } from "./api/client"; 
 
 export default function App() {
   useEffect(() => { injectGlobalCSS(); }, []);
 
   // Auth state
-  const [user, setUser]       = useState(null);
+  // const [user, setUser]       = useState(null);
 
+  const [user, setUser] = useState(() => getUser());
   // Navigation
   const [screen, setScreen]   = useState("dashboard");
   const [collapsed, setCollapsed] = useState(false);
