@@ -234,6 +234,19 @@ class PlatViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated(), IsAdministrateur()]
         return [IsAuthenticated()]
 
+    def destroy(self, request, *args, **kwargs):
+        plat = self.get_object()
+        active_statuts = ['STOCKEE', 'EN_ATTENTE_ACCEPTATION', 'EN_PREPARATION', 'EN_ATTENTE_LIVRAISON']
+        has_active = CommandePlat.objects.filter(
+            plat=plat, commande__statut__in=active_statuts
+        ).exists()
+        if has_active:
+            return Response(
+                {'detail': "Impossible de supprimer ce plat : il est utilisé dans des commandes actives"},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY
+            )
+        return super().destroy(request, *args, **kwargs)
+
 
 # ==================== ORDER (COMMANDE) ====================
 
@@ -388,12 +401,13 @@ class OrderViewSet(viewsets.ModelViewSet):
         )
 
         # Notify serveur
-        Notification.objects.create(
-            user=commande.serveur,
-            type='order_accepted',
-            message=f"Commande {commande.order_id} acceptée par {cuisinier.get_full_name()}",
-            data={'order_id': commande.order_id, 'table_num': commande.table.numero}
-        )
+        if commande.serveur:
+            Notification.objects.create(
+                user=commande.serveur,
+                type='order_accepted',
+                message=f"Commande {commande.order_id} acceptée par {cuisinier.get_full_name()}",
+                data={'order_id': commande.order_id, 'table_num': commande.table.numero}
+            )
 
         return Response(OrderSerializer(commande).data)
 
@@ -425,12 +439,13 @@ class OrderViewSet(viewsets.ModelViewSet):
             table_name='commande', record_id=commande.id, request=request
         )
 
-        Notification.objects.create(
-            user=commande.serveur,
-            type='order_rejected',
-            message=f"Commande {commande.order_id} refusée — {motif}",
-            data={'order_id': commande.order_id, 'table_num': commande.table.numero, 'motif': motif}
-        )
+        if commande.serveur:
+            Notification.objects.create(
+                user=commande.serveur,
+                type='order_rejected',
+                message=f"Commande {commande.order_id} refusée — {motif}",
+                data={'order_id': commande.order_id, 'table_num': commande.table.numero, 'motif': motif}
+            )
 
         return Response(OrderSerializer(commande).data)
 
@@ -454,12 +469,13 @@ class OrderViewSet(viewsets.ModelViewSet):
             table_name='commande', record_id=commande.id, request=request
         )
 
-        Notification.objects.create(
-            user=commande.serveur,
-            type='order_ready',
-            message=f"Commande prête : Table {commande.table.numero}",
-            data={'order_id': commande.order_id, 'table_num': commande.table.numero}
-        )
+        if commande.serveur:
+            Notification.objects.create(
+                user=commande.serveur,
+                type='order_ready',
+                message=f"Commande prête : Table {commande.table.numero}",
+                data={'order_id': commande.order_id, 'table_num': commande.table.numero}
+            )
 
         return Response(OrderSerializer(commande).data)
 
