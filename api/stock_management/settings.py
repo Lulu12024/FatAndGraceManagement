@@ -191,7 +191,9 @@ SPECTACULAR_SETTINGS = {
 #     "http://10.64.10.53:3000",
 #     "https://fatandgracemanagement-front.onrender.com"
 # ]
-
+CORS_ALLOWED_ORIGINS = [
+    "https://fatandgracemanagement-front.onrender.com",
+]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True  # Permettre toutes les origines (à restreindre en production)
 # En mode DEBUG, autoriser toutes les origines pour faciliter les tests
