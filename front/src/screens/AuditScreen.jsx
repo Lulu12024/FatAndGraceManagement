@@ -11,7 +11,10 @@ const AuditScreen = ({ toast }) => {
 
   useEffect(() => {
     setLoading(true);
-    auditService.list().then(data => { if(data) setLogs(unwrap(data)); }).catch(()=>{}).finally(()=>setLoading(false));
+    auditService.list()
+      .then(data => { if (data) setLogs(data.results ?? data); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
   }, []);
 
   const doExport = async (format) => {

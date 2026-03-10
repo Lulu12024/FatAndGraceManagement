@@ -188,7 +188,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://127.0.0.1:8080",
     "http://localhost:5500",
     "http://127.0.0.1:5500",
-    "http://10.64.10.53:3000/"
+    "http://10.64.10.53:3000/",
+    "https://fatandgracemanagement-front.onrender.com"
 ]
 
 CORS_ALLOW_CREDENTIALS = True
