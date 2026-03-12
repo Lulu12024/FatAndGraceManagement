@@ -234,6 +234,19 @@ class PlatViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated(), IsAdministrateur()]
         return [IsAuthenticated()]
 
+    def destroy(self, request, *args, **kwargs):
+        plat = self.get_object()
+        active_statuts = ['STOCKEE', 'EN_ATTENTE_ACCEPTATION', 'EN_PREPARATION', 'EN_ATTENTE_LIVRAISON']
+        has_active = CommandePlat.objects.filter(
+            plat=plat, commande__statut__in=active_statuts
+        ).exists()
+        if has_active:
+            return Response(
+                {'detail': "Impossible de supprimer ce plat : il est utilisé dans des commandes actives"},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY
+            )
+        return super().destroy(request, *args, **kwargs)
+
 
 # ==================== ORDER (COMMANDE) ====================
 
@@ -388,12 +401,13 @@ class OrderViewSet(viewsets.ModelViewSet):
         )
 
         # Notify serveur
-        Notification.objects.create(
-            user=commande.serveur,
-            type='order_accepted',
-            message=f"Commande {commande.order_id} acceptée par {cuisinier.get_full_name()}",
-            data={'order_id': commande.order_id, 'table_num': commande.table.numero}
-        )
+        if commande.serveur:
+            Notification.objects.create(
+                user=commande.serveur,
+                type='order_accepted',
+                message=f"Commande {commande.order_id} acceptée par {cuisinier.get_full_name()}",
+                data={'order_id': commande.order_id, 'table_num': commande.table.numero}
+            )
 
         return Response(OrderSerializer(commande).data)
 
@@ -425,12 +439,13 @@ class OrderViewSet(viewsets.ModelViewSet):
             table_name='commande', record_id=commande.id, request=request
         )
 
-        Notification.objects.create(
-            user=commande.serveur,
-            type='order_rejected',
-            message=f"Commande {commande.order_id} refusée — {motif}",
-            data={'order_id': commande.order_id, 'table_num': commande.table.numero, 'motif': motif}
-        )
+        if commande.serveur:
+            Notification.objects.create(
+                user=commande.serveur,
+                type='order_rejected',
+                message=f"Commande {commande.order_id} refusée — {motif}",
+                data={'order_id': commande.order_id, 'table_num': commande.table.numero, 'motif': motif}
+            )
 
         return Response(OrderSerializer(commande).data)
 
@@ -454,12 +469,13 @@ class OrderViewSet(viewsets.ModelViewSet):
             table_name='commande', record_id=commande.id, request=request
         )
 
-        Notification.objects.create(
-            user=commande.serveur,
-            type='order_ready',
-            message=f"Commande prête : Table {commande.table.numero}",
-            data={'order_id': commande.order_id, 'table_num': commande.table.numero}
-        )
+        if commande.serveur:
+            Notification.objects.create(
+                user=commande.serveur,
+                type='order_ready',
+                message=f"Commande prête : Table {commande.table.numero}",
+                data={'order_id': commande.order_id, 'table_num': commande.table.numero}
+            )
 
         return Response(OrderSerializer(commande).data)
 
@@ -633,8 +649,8 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=True, methods=['get'])
     def pdf(self, request, pk=None):
         facture = self.get_object()
-        
-        # Simple PDF generation using reportlab if available, otherwise plain text
+        items = facture.items_snapshot or []
+
         try:
             from reportlab.lib.pagesizes import A4
             from reportlab.pdfgen import canvas
@@ -650,39 +666,38 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
             p.drawString(50, height - 80, f"Date: {facture.date_generation.strftime('%d/%m/%Y %H:%M')}")
             p.drawString(50, height - 100, f"Table: {facture.table.numero}")
 
-            # Items
+            # Colonnes
             y = height - 140
             p.setFont("Helvetica-Bold", 11)
             p.drawString(50, y, "Article")
             p.drawString(300, y, "Qté")
-            p.drawString(400, y, "Prix unit.")
+            p.drawString(380, y, "Prix unit.")
             p.drawString(480, y, "Total")
             y -= 20
 
+            # Items depuis le snapshot
             p.setFont("Helvetica", 10)
-            commandes = Commande.objects.filter(
-                table=facture.table, statut='LIVREE',
-                date_commande__lte=facture.date_generation
-            )
-            for commande in commandes:
-                for cp in commande.commandeplat_set.all():
-                    p.drawString(50, y, cp.plat.nom)
-                    p.drawString(300, y, str(cp.quantite))
-                    p.drawString(400, y, f"{cp.prix_unitaire}")
-                    p.drawString(480, y, f"{cp.prix_total}")
-                    y -= 18
+            for item in items:
+                p.drawString(50, y, item['nom'])
+                p.drawString(300, y, str(item['qte']))
+                p.drawString(380, y, f"{item['prix']}")
+                p.drawString(480, y, f"{item['qte'] * item['prix']:.2f}")
+                y -= 18
 
-            # Total
+            # Totaux
             y -= 10
             p.setFont("Helvetica-Bold", 12)
-            p.drawString(400, y, f"Total: {facture.montant_total}")
+            p.drawString(380, y, f"Total: {facture.montant_total}")
             if facture.pourboire > 0:
                 y -= 20
-                p.drawString(400, y, f"Pourboire: {facture.pourboire}")
+                p.drawString(380, y, f"Pourboire: {facture.pourboire}")
             y -= 20
-            p.drawString(400, y, f"Payé: {facture.montant_paye}")
+            p.drawString(380, y, f"Payé: {facture.montant_paye}")
             y -= 20
             p.drawString(50, y, f"Mode de paiement: {facture.get_mode_paiement_display()}")
+            if facture.serveur:
+                y -= 20
+                p.drawString(50, y, f"Serveur: {facture.serveur.get_full_name()}")
 
             p.showPage()
             p.save()
@@ -693,11 +708,13 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
             return response
 
         except ImportError:
-            # Fallback: simple text
+            # Fallback texte si reportlab non installé
             content = f"FACTURE {facture.numero_facture}\n"
-            content += f"Date: {facture.date_generation}\n"
-            content += f"Table: {facture.table.numero}\n"
-            content += f"Montant: {facture.montant_total}\n"
+            content += f"Date: {facture.date_generation.strftime('%d/%m/%Y %H:%M')}\n"
+            content += f"Table: {facture.table.numero}\n\n"
+            for item in items:
+                content += f"{item['nom']} × {item['qte']} — {item['prix']} FCFA\n"
+            content += f"\nTotal: {facture.montant_total} FCFA\n"
             content += f"Mode paiement: {facture.get_mode_paiement_display()}\n"
             response = HttpResponse(content, content_type='text/plain')
             response['Content-Disposition'] = f'attachment; filename="{facture.numero_facture}.txt"'

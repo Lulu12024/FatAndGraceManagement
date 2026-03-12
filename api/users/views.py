@@ -218,6 +218,20 @@ class UserViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Vérifier si l'utilisateur a des commandes actives
+        from commandes.models import Commande
+        from django.db.models import Q
+        active_statuts = ['STOCKEE', 'EN_ATTENTE_ACCEPTATION', 'EN_PREPARATION', 'EN_ATTENTE_LIVRAISON']
+        has_active = Commande.objects.filter(
+            Q(serveur=instance) | Q(cuisinier=instance),
+            statut__in=active_statuts
+        ).exists()
+        if has_active:
+            return Response(
+                {'detail': "Impossible de supprimer cet utilisateur : il a des commandes actives en cours"},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY
+            )
+
         user_login = instance.login
 
         log_action(

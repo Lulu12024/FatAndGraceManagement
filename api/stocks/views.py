@@ -4,8 +4,11 @@ from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework.filters import SearchFilter, OrderingFilter
+from django.db import transaction
+from django.db.models import Q
 from django.utils import timezone
 from decimal import Decimal
+import unicodedata
 
 from .models import (
     Produit, Unite, Stock, MouvementStock, DemandeProduit,
@@ -66,8 +69,12 @@ class ProductViewSet(viewsets.ModelViewSet):
         alerte = self.request.query_params.get('alerte')
         if alerte == 'true':
             # Get products where stock is at or below alert threshold
+            # Also include products that have no Stock entry at all
             from django.db.models import F
-            qs = qs.filter(stock__quantite_dispo__lte=F('seuil_alerte'))
+            qs = qs.filter(
+                Q(stock__quantite_dispo__lte=F('seuil_alerte')) |
+                Q(stock__isnull=True)
+            )
 
         perime = self.request.query_params.get('perime')
         if perime == 'true':
@@ -167,6 +174,9 @@ class MovementViewSet(viewsets.ModelViewSet):
 
         type_filter = self.request.query_params.get('type')
         if type_filter:
+            # Normaliser les accents (ex: ENTRÉE → ENTREE) pour matcher la base
+            type_filter = unicodedata.normalize('NFD', type_filter)
+            type_filter = ''.join(c for c in type_filter if unicodedata.category(c) != 'Mn')
             qs = qs.filter(type_mouvement__nom=type_filter)
 
         statut_filter = self.request.query_params.get('statut')
@@ -189,7 +199,7 @@ class MovementViewSet(viewsets.ModelViewSet):
 
     def create(self, request, *args, **kwargs):
         serializer = MovementCreateSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)   
+        serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
         produit = Produit.objects.get(id=data['produit_id'])
@@ -242,25 +252,26 @@ class MovementViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_422_UNPROCESSABLE_ENTITY
             )
 
-        statut_validee, _ = StatutMouvement.objects.get_or_create(nom='VALIDEE')
-        mouvement.statut = statut_validee
-        mouvement.valideur = request.user
-        mouvement.save()
+        with transaction.atomic():
+            statut_validee, _ = StatutMouvement.objects.get_or_create(nom='VALIDEE')
+            mouvement.statut = statut_validee
+            mouvement.valideur = request.user
+            mouvement.save()
 
-        # Update stock
-        try:
-            stock = mouvement.produit.stock
-        except Stock.DoesNotExist:
-            stock = Stock.objects.create(produit=mouvement.produit, quantite_dispo=Decimal('0.00'))
+            # Update stock
+            try:
+                stock = mouvement.produit.stock
+            except Stock.DoesNotExist:
+                stock = Stock.objects.create(produit=mouvement.produit, quantite_dispo=Decimal('0.00'))
 
-        if mouvement.type_mouvement.nom == 'ENTREE':
-            stock.quantite_dispo += mouvement.quantite
-        elif mouvement.type_mouvement.nom in ['SORTIE', 'SUPPRESSION']:
-            stock.quantite_dispo -= mouvement.quantite
-            if stock.quantite_dispo < 0:
-                stock.quantite_dispo = Decimal('0.00')
-        stock.date_time = timezone.now()
-        stock.save()
+            if mouvement.type_mouvement.nom == 'ENTREE':
+                stock.quantite_dispo += mouvement.quantite
+            elif mouvement.type_mouvement.nom in ['SORTIE', 'SUPPRESSION']:
+                stock.quantite_dispo -= mouvement.quantite
+                if stock.quantite_dispo < 0:
+                    stock.quantite_dispo = Decimal('0.00')
+            stock.date_time = timezone.now()
+            stock.save()
 
         log_action(
             user=request.user, action='VALIDATE',

@@ -11,7 +11,7 @@ media/document
 media/Csv
 # media
 logs/django.log
-rh_management_system/proprieties.json
+api/stock_management/proprieties.json
 statics
 statics/
 evaluation/__pycache__
