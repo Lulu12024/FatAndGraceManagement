@@ -204,8 +204,10 @@ class MovementViewSet(viewsets.ModelViewSet):
         data = serializer.validated_data
         produit = Produit.objects.get(id=data['produit_id'])
 
-        # Get or create type and statut
-        type_mouvement, _ = TypeMouvement.objects.get_or_create(nom=data['type'])
+        # Get or create type and statut (normaliser les accents : ENTRÉE → ENTREE)
+        type_nom = unicodedata.normalize('NFD', data['type'])
+        type_nom = ''.join(c for c in type_nom if unicodedata.category(c) != 'Mn')
+        type_mouvement, _ = TypeMouvement.objects.get_or_create(nom=type_nom)
         statut_en_attente, _ = StatutMouvement.objects.get_or_create(nom='EN_ATTENTE')
 
         mouvement = MouvementStock.objects.create(
@@ -264,9 +266,13 @@ class MovementViewSet(viewsets.ModelViewSet):
             except Stock.DoesNotExist:
                 stock = Stock.objects.create(produit=mouvement.produit, quantite_dispo=Decimal('0.00'))
 
-            if mouvement.type_mouvement.nom == 'ENTREE':
+            # Normaliser les accents pour la comparaison (ENTRÉE → ENTREE)
+            type_nom = unicodedata.normalize('NFD', mouvement.type_mouvement.nom)
+            type_nom = ''.join(c for c in type_nom if unicodedata.category(c) != 'Mn')
+
+            if type_nom == 'ENTREE':
                 stock.quantite_dispo += mouvement.quantite
-            elif mouvement.type_mouvement.nom in ['SORTIE', 'SUPPRESSION']:
+            elif type_nom in ['SORTIE', 'SUPPRESSION']:
                 stock.quantite_dispo -= mouvement.quantite
                 if stock.quantite_dispo < 0:
                     stock.quantite_dispo = Decimal('0.00')

@@ -195,22 +195,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
         ]
 
     def get_items(self, obj):
-        """Reconstruit les items à partir des commandes livrées de la table"""
-        items = []
-        # Get all delivered orders for this table that were part of this invoice
-        commandes = Commande.objects.filter(
-            table=obj.table,
-            statut='LIVREE',
-            date_commande__lte=obj.date_generation
-        )
-        for commande in commandes:
-            for cp in commande.commandeplat_set.all():
-                items.append({
-                    'nom': cp.plat.nom,
-                    'qte': cp.quantite,
-                    'prix': cp.prix_unitaire,
-                })
-        return items
+        return obj.items_snapshot or []
 
     def get_serveur(self, obj):
         if obj.serveur:
