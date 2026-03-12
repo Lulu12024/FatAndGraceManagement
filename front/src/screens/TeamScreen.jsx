@@ -80,7 +80,7 @@ const TeamScreen = ({ role, toast }) => {
         role_id: form.role_id, password: form.password, password_confirm: form.password_confirm,
       });
       const roleName = roles.find(r => r.id === form.role_id)?.nom ?? form.role_id;
-      setUsers(p => [...p, { ...newU, first_name: form.firstName, last_name: form.lastName, isActive: true }]);
+      setUsers(p => [...p, { ...newU, first_name: form.firstName, last_name: form.lastName, is_activite: true }]);
       setForm({ ...EMPTY_FORM, role_id: roles[0]?.id ?? "" });
       setShowAdd(false);
       toast.success("Utilisateur créé", `${form.firstName} ${form.lastName} — ${roleName}`);
@@ -91,7 +91,7 @@ const TeamScreen = ({ role, toast }) => {
   const toggleUser = async (id) => {
     try {
       await usersService.toggle(id);
-      setUsers(p => p.map(u => u.id === id ? { ...u, isActive: !u.isActive } : u));
+      setUsers(p => p.map(u => u.id === id ? { ...u, is_activite: !u.is_activite } : u));
     } catch (err) { handleApiError(err, toast); }
   };
 
@@ -124,12 +124,12 @@ const TeamScreen = ({ role, toast }) => {
                     <div style={{ marginTop: 5 }}><Badge color={color}>{u.role?.nom ?? u.role}</Badge></div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-                    <Dot color={u.isActive ? C.success : C.danger} />
+                    <Dot color={u.is_activite ? C.success : C.danger} />
                     {isAdmin && (
                       <div style={{ display: "flex", gap: 8 }}>
                         <button onClick={() => openEdit(u)} style={{ background: "none", border: "none", color: C.gold, fontSize: 11, cursor: "pointer" }} title="Modifier">✏️</button>
                         <button onClick={() => toggleUser(u.id)} style={{ background: "none", border: "none", color: C.muted, fontSize: 11, cursor: "pointer" }} className="hover-gold">
-                          {u.isActive ? "Désactiver" : "Activer"}
+                          {u.is_activite ? "Désactiver" : "Activer"}
                         </button>
                       </div>
                     )}
