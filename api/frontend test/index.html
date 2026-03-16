@@ -270,15 +270,24 @@
             <input class="form-input id-input" id="tablePayId" placeholder="ID">
           </div>
           <div class="form-group" style="margin:0">
+            <label class="form-label">Montant</label>
+            <input class="form-input" id="tablePayMontant" type="number" step="0.01" placeholder="5000">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Pourboire</label>
+            <input class="form-input" id="tablePayPourboire" type="number" step="0.01" placeholder="0" value="0">
+          </div>
+          <div class="form-group" style="margin:0">
             <label class="form-label">Mode paiement</label>
             <select class="form-select" id="tablePayMode">
-              <option value="ESPECES">Espèces</option>
-              <option value="CARTE">Carte</option>
-              <option value="MOBILE">Mobile</option>
+              <option value="Espèces">Espèces</option>
+              <option value="Carte bancaire">Carte bancaire</option>
+              <option value="Mobile Money">Mobile Money</option>
+              <option value="Autre">Autre</option>
             </select>
           </div>
           <!-- POST /api/tables/{id}/pay/ -->
-          <button class="btn btn-primary btn-sm" onclick="Tables.pay()">💳 Payer</button>
+          <button class="btn btn-primary btn-sm" onclick="Tables.pay()">&#x1f4b3; Payer</button>
         </div>
       </div>
 
@@ -423,6 +432,36 @@
         <button class="btn btn-danger btn-sm" onclick="Orders.cancel()">Confirmer annulation</button>
       </div>
 
+      <!-- Paiement individuel d'une commande -->
+      <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">&#x1f4b3; Payer une commande</h3>
+      <div class="collapsible-body">
+        <div class="form-inline">
+          <div class="form-group" style="margin:0">
+            <label class="form-label">ID Commande</label>
+            <input class="form-input id-input" id="cmdPayId" placeholder="ID">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Montant</label>
+            <input class="form-input" id="cmdPayMontant" type="number" step="0.01" placeholder="5000">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Pourboire</label>
+            <input class="form-input" id="cmdPayPourboire" type="number" step="0.01" placeholder="0" value="0">
+          </div>
+          <div class="form-group" style="margin:0">
+            <label class="form-label">Mode paiement</label>
+            <select class="form-select" id="cmdPayMode">
+              <option value="Espèces">Espèces</option>
+              <option value="Carte bancaire">Carte bancaire</option>
+              <option value="Mobile Money">Mobile Money</option>
+              <option value="Autre">Autre</option>
+            </select>
+          </div>
+          <!-- POST /api/orders/{id}/pay/ -->
+          <button class="btn btn-success btn-sm" onclick="Orders.pay()">&#x1f4b3; Payer commande</button>
+        </div>
+      </div>
+
       <h3 class="section-title collapsible-header" onclick="UI.toggleCollapsible(this)">🔍 Filtres</h3>
       <div class="collapsible-body">
         <div class="form-inline">
@@ -430,10 +469,11 @@
             <label class="form-label">Statut</label>
             <select class="form-select" id="cmdFilterStatut">
               <option value="">Tous</option>
-              <option value="EN_ATTENTE_ACCEPTATION">En attente</option>
+              <option value="EN_ATTENTE_ACCEPTATION">En attente acceptation</option>
               <option value="EN_PREPARATION">En préparation</option>
-              <option value="PRETE">Prête</option>
-              <option value="LIVREE">Livrée</option>
+              <option value="EN_ATTENTE_LIVRAISON">En attente livraison</option>
+              <option value="EN_ATTENTE_PAIEMENT">En attente paiement</option>
+              <option value="PAYEE">Payée</option>
               <option value="ANNULEE">Annulée</option>
               <option value="REFUSEE">Refusée</option>
             </select>

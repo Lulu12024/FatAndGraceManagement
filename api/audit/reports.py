@@ -36,10 +36,10 @@ class ReportsViewSet(viewsets.ViewSet):
         nb_commandes_jour = commandes_jour.count()
         nb_en_attente = commandes_jour.filter(statut='EN_ATTENTE_ACCEPTATION').count()
         nb_en_preparation = commandes_jour.filter(statut='EN_PREPARATION').count()
-        nb_livrees = commandes_jour.filter(statut='LIVREE').count()
+        nb_livrees = commandes_jour.filter(statut__in=['EN_ATTENTE_PAIEMENT', 'PAYEE']).count()
         
         # CA du jour
-        ca_jour = commandes_jour.filter(statut='LIVREE').aggregate(
+        ca_jour = commandes_jour.filter(statut='PAYEE').aggregate(
             total=Sum('prix_total')
         )['total'] or Decimal('0.00')
         
@@ -77,11 +77,11 @@ class ReportsViewSet(viewsets.ViewSet):
         commandes = Commande.objects.filter(date_commande__gte=date_start)
 
         total = commandes.count()
-        livrees = commandes.filter(statut='LIVREE').count()
+        livrees = commandes.filter(statut__in=['EN_ATTENTE_PAIEMENT', 'PAYEE']).count()
         annulees = commandes.filter(statut='ANNULEE').count()
         refusees = commandes.filter(statut='REFUSEE').count()
 
-        ca = commandes.filter(statut='LIVREE').aggregate(
+        ca = commandes.filter(statut='PAYEE').aggregate(
             total=Sum('prix_total')
         )['total'] or Decimal('0.00')
 
@@ -89,7 +89,7 @@ class ReportsViewSet(viewsets.ViewSet):
         from commandes.models import CommandePlat
         top_plats = CommandePlat.objects.filter(
             commande__date_commande__gte=date_start,
-            commande__statut='LIVREE'
+            commande__statut='PAYEE'
         ).values('plat__nom').annotate(
             total_qte=Sum('quantite'),
             total_ca=Sum(F('quantite') * F('prix_unitaire'))
@@ -164,7 +164,7 @@ class ReportsViewSet(viewsets.ViewSet):
 
         # CA
         ca = Commande.objects.filter(
-            date_commande__gte=date_start, statut='LIVREE'
+            date_commande__gte=date_start, statut='PAYEE'
         ).aggregate(total=Sum('prix_total'))['total'] or Decimal('0.00')
 
         # Ticket moyen
@@ -174,7 +174,7 @@ class ReportsViewSet(viewsets.ViewSet):
         # Couverts (approximation basée sur le nombre de tables servies)
         nb_tables_servies = Table.objects.filter(
             commandes__date_commande__gte=date_start,
-            commandes__statut='LIVREE'
+            commandes__statut__in=['EN_ATTENTE_PAIEMENT', 'PAYEE']
         ).distinct().count()
 
         # Taux d'occupation des tables

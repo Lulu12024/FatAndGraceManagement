@@ -314,11 +314,18 @@ const Tables = {
   },
 
   async pay() {
-    const id   = UI.val('tablePayId');
-    const mode = UI.val('tablePayMode');
+    const id       = UI.val('tablePayId');
+    const mode     = UI.val('tablePayMode');
+    const montant  = parseFloat(UI.val('tablePayMontant'));
+    const pourboire = parseFloat(UI.val('tablePayPourboire')) || 0;
     if (!id) return Toast.error('ID table requis');
+    if (!montant || montant <= 0) return Toast.error('Montant requis');
     // POST /api/tables/{id}/pay/
-    await Api.post(`/tables/${id}/pay/`, { mode_paiement: mode }, this.rEl(), this.sEl());
+    await Api.post(`/tables/${id}/pay/`, {
+      mode_paiement: mode,
+      montant: montant,
+      pourboire: pourboire
+    }, this.rEl(), this.sEl());
   }
 };
 
@@ -415,6 +422,21 @@ const Orders = {
     // POST /api/orders/{id}/cancel/
     await Api.post(`/orders/${id}/cancel/`, { motif: UI.val('cmdMotifAnnulation') },
       this.rEl(), this.sEl());
+  },
+
+  async pay() {
+    const id       = UI.val('cmdPayId');
+    const mode     = UI.val('cmdPayMode');
+    const montant  = parseFloat(UI.val('cmdPayMontant'));
+    const pourboire = parseFloat(UI.val('cmdPayPourboire')) || 0;
+    if (!id) return Toast.error('ID commande requis');
+    if (!montant || montant <= 0) return Toast.error('Montant requis');
+    // POST /api/orders/{id}/pay/
+    await Api.post(`/orders/${id}/pay/`, {
+      mode_paiement: mode,
+      montant: montant,
+      pourboire: pourboire
+    }, this.rEl(), this.sEl());
   },
 
   async listFiltered() {

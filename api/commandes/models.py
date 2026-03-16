@@ -39,9 +39,9 @@ class Table(models.Model):
         return f"Table {self.numero} - {self.get_statut_display()}"
 
     def calculer_montant_total(self):
-        """Calcule le montant total de toutes les commandes livrées de cette table"""
+        """Calcule le montant total des commandes en attente de paiement de cette table"""
         total = self.commandes.filter(
-            statut='LIVREE'
+            statut='EN_ATTENTE_PAIEMENT'
         ).aggregate(
             total=models.Sum('prix_total')
         )['total'] or Decimal('0.00')
@@ -79,7 +79,8 @@ class Commande(models.Model):
         ('EN_ATTENTE_ACCEPTATION', 'En attente d\'acceptation'),
         ('EN_PREPARATION', 'En préparation'),
         ('EN_ATTENTE_LIVRAISON', 'En attente de livraison'),
-        ('LIVREE', 'Livrée'),
+        ('EN_ATTENTE_PAIEMENT', 'En attente de paiement'),
+        ('PAYEE', 'Payée'),
         ('ANNULEE', 'Annulée'),
         ('REFUSEE', 'Refusée'),
     ]
@@ -94,6 +95,7 @@ class Commande(models.Model):
     date_acceptation = models.DateTimeField(null=True, blank=True)
     date_preparation = models.DateTimeField(null=True, blank=True)
     date_livraison = models.DateTimeField(null=True, blank=True)
+    date_paiement = models.DateTimeField(null=True, blank=True)
     
     # Motifs d'annulation/rejet
     motif_rejet = models.TextField(blank=True, verbose_name='Motif de rejet')
@@ -119,6 +121,7 @@ class Commande(models.Model):
         related_name='commandes_cuisinier',
     )
     plats = models.ManyToManyField(Plat, through='CommandePlat', related_name='commandes')
+    is_paid = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'commande'
@@ -153,7 +156,7 @@ class CommandePlat(models.Model):
     plat = models.ForeignKey(Plat, on_delete=models.PROTECT)
     quantite = models.PositiveIntegerField(default=1)
     prix_unitaire = models.DecimalField(max_digits=10, decimal_places=2)
-
+    
     class Meta:
         db_table = 'commande_plat'
         verbose_name = 'Commande Plat'
@@ -205,6 +208,15 @@ class Facture(models.Model):
         on_delete=models.PROTECT,
         related_name='factures',
         verbose_name='Table'
+    )
+
+    commande = models.ForeignKey(
+        Commande,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name='factures',
+        verbose_name='Commande'
     )
     gerant = models.ForeignKey(
         settings.AUTH_USER_MODEL,

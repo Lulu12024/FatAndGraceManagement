@@ -40,11 +40,13 @@ class OrderInTableSerializer(serializers.ModelSerializer):
     motif = serializers.SerializerMethodField()
     created_at = serializers.DateTimeField(source='date_commande', read_only=True)
 
+    is_paid = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = Commande
         fields = [
             'id', 'table_id', 'num_id', 'table_num', 'serveur', 'cuisinier',
-            'items', 'status', 'montant', 'obs', 'motif', 'created_at'
+            'items', 'status', 'montant', 'obs', 'motif', 'is_paid', 'created_at'
         ]
 
     def get_cuisinier(self, obj):
@@ -141,11 +143,13 @@ class OrderSerializer(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(source='date_commande', read_only=True)
     updated_at = serializers.SerializerMethodField()
 
+    is_paid = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = Commande
         fields = [
             'id', 'table_id', 'num_id', 'table_num', 'serveur', 'cuisinier',
-            'items', 'status', 'montant', 'obs', 'motif',
+            'items', 'status', 'montant', 'obs', 'motif', 'is_paid',
             'created_at', 'updated_at'
         ]
 
@@ -160,7 +164,7 @@ class OrderSerializer(serializers.ModelSerializer):
 
     def get_updated_at(self, obj):
         # Return the most recent transition date
-        dates = [d for d in [obj.date_livraison, obj.date_preparation, obj.date_acceptation, obj.date_commande] if d]
+        dates = [d for d in [obj.date_paiement, obj.date_livraison, obj.date_preparation, obj.date_acceptation, obj.date_commande] if d]
         return max(dates).isoformat() if dates else obj.date_commande.isoformat()
 
 

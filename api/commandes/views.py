@@ -106,17 +106,17 @@ class TableViewSet(viewsets.ModelViewSet):
                 {'detail': "La table n'est pas en service"},
                 status=status.HTTP_422_UNPROCESSABLE_ENTITY
             )
-        # Check all orders are delivered
-        non_delivered = table.commandes.exclude(
-            statut__in=['LIVREE', 'ANNULEE', 'REFUSEE']
+        # Check all orders are in a closable state
+        non_closed = table.commandes.exclude(
+            statut__in=['EN_ATTENTE_PAIEMENT', 'PAYEE', 'ANNULEE', 'REFUSEE']
         ).exists()
-        if non_delivered:
+        if non_closed:
             return Response(
-                {'detail': "Des commandes ne sont pas encore livrées"},
+                {'detail': "Des commandes ne sont pas encore livrées ou payées"},
                 status=status.HTTP_422_UNPROCESSABLE_ENTITY
             )
-        # Calculate total
-        total = table.commandes.filter(statut='LIVREE').aggregate(
+        # Calculate total from unpaid orders only
+        total = table.commandes.filter(statut='EN_ATTENTE_PAIEMENT').aggregate(
             total=Sum('prix_total')
         )['total'] or Decimal('0.00')
 
@@ -142,14 +142,16 @@ class TableViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_422_UNPROCESSABLE_ENTITY
             )
 
-        # Build items snapshot from delivered orders
+        # Build items snapshot from all orders (paid + unpaid)
         items_snapshot = []
-        for commande in table.commandes.filter(statut='LIVREE'):
+        for commande in table.commandes.filter(statut__in=['EN_ATTENTE_PAIEMENT', 'PAYEE']):
             for cp in commande.commandeplat_set.all():
                 items_snapshot.append({
                     'nom': cp.plat.nom,
                     'qte': cp.quantite,
                     'prix': float(cp.prix_unitaire),
+                    'commande_id': commande.order_id,
+                    'deja_payee': commande.statut == 'PAYEE',
                 })
 
         serializer = PaymentSerializer(data=request.data)
@@ -164,8 +166,8 @@ class TableViewSet(viewsets.ModelViewSet):
             'Autre': 'AUTRE',
         }
 
-        # Find the serveur from the first order
-        first_order = table.commandes.filter(statut='LIVREE').first()
+        # Find the serveur from the first unpaid order
+        first_order = table.commandes.filter(statut='EN_ATTENTE_PAIEMENT').first()
         serveur = first_order.serveur if first_order else None
 
         # Create invoice
@@ -178,6 +180,11 @@ class TableViewSet(viewsets.ModelViewSet):
             gerant=request.user,
             serveur=serveur,
             items_snapshot=items_snapshot,
+        )
+
+        # Mark all remaining unpaid orders as PAYEE
+        table.commandes.filter(statut='EN_ATTENTE_PAIEMENT').update(
+            statut='PAYEE', is_paid=True, date_paiement=timezone.now()
         )
 
         # Reset table
@@ -488,18 +495,95 @@ class OrderViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_422_UNPROCESSABLE_ENTITY
             )
 
-        commande.statut = 'LIVREE'
+        commande.statut = 'EN_ATTENTE_PAIEMENT'
         commande.date_livraison = timezone.now()
         commande.save()
 
         log_action(
             user=request.user, action='UPDATE',
             type_action='Livraison commande',
-            description=f"Commande {commande.order_id} livrée",
+            description=f"Commande {commande.order_id} livrée — en attente de paiement",
             table_name='commande', record_id=commande.id, request=request
         )
 
         return Response(OrderSerializer(commande).data)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsGerantOrAdmin])
+    def pay(self, request, pk=None):
+        """
+        POST /api/orders/{id}/pay/
+        Paye une commande individuellement. Crée une facture pour cette commande uniquement.
+        La commande reste sur la table mais n'est plus comptée pour le paiement de la table.
+        """
+        commande = self.get_object()
+        if commande.statut != 'EN_ATTENTE_PAIEMENT':
+            return Response(
+                {'detail': "La commande n'est pas en attente de paiement"},
+                status=status.HTTP_422_UNPROCESSABLE_ENTITY
+            )
+
+        serializer = PaymentSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+        data = serializer.validated_data
+        mode_map = {
+            'Espèces': 'ESPECES',
+            'Carte bancaire': 'CARTE',
+            'Mobile Money': 'MOBILE_MONEY',
+            'Autre': 'AUTRE',
+        }
+
+        # Build items snapshot for this order only
+        items_snapshot = []
+        for cp in commande.commandeplat_set.all():
+            items_snapshot.append({
+                'nom': cp.plat.nom,
+                'qte': cp.quantite,
+                'prix': float(cp.prix_unitaire),
+                'commande_id': commande.order_id,
+            })
+
+        # Create invoice linked to this specific order
+        facture = Facture.objects.create(
+            table=commande.table,
+            commande=commande,
+            montant_total=commande.prix_total,
+            montant_paye=data['montant'],
+            pourboire=data.get('pourboire', Decimal('0.00')),
+            mode_paiement=mode_map.get(data['mode_paiement'], 'AUTRE'),
+            gerant=request.user,
+            serveur=commande.serveur,
+            items_snapshot=items_snapshot,
+        )
+
+        # Mark order as paid
+        commande.statut = 'PAYEE'
+        commande.is_paid = True
+        commande.date_paiement = timezone.now()
+        commande.save()
+
+        log_action(
+            user=request.user, action='CREATE',
+            type_action='Paiement commande individuelle',
+            description=f"Commande {commande.order_id} payée — {data['mode_paiement']} — {data['montant']}",
+            table_name='facture', record_id=facture.id, request=request
+        )
+
+        return Response({
+            'order': OrderSerializer(commande).data,
+            'invoice': {
+                'id': facture.numero_facture,
+                'commande_id': commande.order_id,
+                'table_id': commande.table.id,
+                'table_num': commande.table.numero,
+                'montant': float(facture.montant_total),
+                'pourboire': float(facture.pourboire),
+                'mode_paiement': data['mode_paiement'],
+                'date': facture.date_generation.isoformat(),
+                'items': items_snapshot,
+            }
+        })
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated])
     def cancel(self, request, pk=None):
@@ -522,7 +606,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_403_FORBIDDEN
                 )
         elif role in ['Gérant', 'Manager', 'Administrateur']:
-            if commande.statut not in ['STOCKEE', 'EN_ATTENTE_ACCEPTATION', 'EN_PREPARATION', 'EN_ATTENTE_LIVRAISON']:
+            if commande.statut not in ['STOCKEE', 'EN_ATTENTE_ACCEPTATION', 'EN_PREPARATION', 'EN_ATTENTE_LIVRAISON', 'EN_ATTENTE_PAIEMENT']:
                 return Response(
                     {'detail': "Vous n'avez pas la permission d'annuler cette commande dans son état actuel"},
                     status=status.HTTP_403_FORBIDDEN
