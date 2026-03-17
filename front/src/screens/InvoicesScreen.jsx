@@ -70,7 +70,7 @@ const InvoicesScreen = ({ toast }) => {
                   </div>
                   <div style={{ display: "flex", gap: 6, marginTop: 10, justifyContent: "flex-end" }}>
                     <Btn small variant="ghost" onClick={() => dlPDF(inv)}>PDF ↓</Btn>
-                    <Btn small variant="outline">Réimprimer</Btn>
+                    {/* <Btn small variant="outline">Réimprimer</Btn> */}
                   </div>
                 </div>
               </div>

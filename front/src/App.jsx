@@ -173,7 +173,9 @@ export default function App() {
     const sharedProps = { role, toast };
 
     if (screen === "table-detail" && selTable) {
-      return <TableDetailScreen {...sharedProps} table={selTable} orders={orders} setOrders={setOrders} setTables={setTables} plats={plats}/>;
+      // return <TableDetailScreen {...sharedProps} table={selTable} orders={orders} setOrders={setOrders} setTables={setTables} plats={plats}/>;
+      const liveTable = tables.find(t => t.id === selTable?.id) ?? selTable;
+      return <TableDetailScreen {...sharedProps} table={liveTable} orders={orders} setOrders={setOrders} setTables={setTables} plats={plats}/>;
     }
     switch(screen) {
       case "dashboard":      return <DashboardScreen {...sharedProps} tables={tables} orders={orders} products={products} movements={movements}/>;
