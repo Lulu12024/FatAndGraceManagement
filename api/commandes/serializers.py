@@ -183,6 +183,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
         source='get_mode_paiement_display', read_only=True
     )
     id = serializers.CharField(source='numero_facture', read_only=True)
+    num_id = serializers.IntegerField(source='pk', read_only=True)
     table_id = serializers.IntegerField(source='table.id', read_only=True)
     table_num = serializers.CharField(source='table.numero', read_only=True)
     montant = serializers.DecimalField(source='montant_total', max_digits=10, decimal_places=2, read_only=True)
@@ -194,7 +195,7 @@ class InvoiceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Facture
         fields = [
-            'id', 'table_id', 'table_num', 'montant', 'pourboire',
+            'id', 'num_id', 'table_id', 'table_num', 'montant', 'pourboire',
             'mode_paiement', 'date', 'items', 'serveur', 'validee_par'
         ]
 
