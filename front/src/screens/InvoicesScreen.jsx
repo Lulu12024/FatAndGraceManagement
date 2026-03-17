@@ -22,7 +22,7 @@ const InvoicesScreen = ({ toast }) => {
   );
 
   const dlPDF = async (inv) => {
-    try { await invoicesService.downloadPdf(inv.id, `facture-${inv.id}.pdf`); }
+    try { await invoicesService.downloadPdf(inv.num_id, `facture-${inv.id}.pdf`); }
     catch (err) { toast.warning("PDF", err.message); }
   };
 

@@ -3,6 +3,11 @@
  * Palette : Or raffiné sur fond Nuit profonde
  */
 
+/**
+ * FATE & GRÂCE — Design Tokens & Global CSS injection
+ * Palette : Or raffiné sur fond Nuit profonde
+ */
+
 export const C = {
   /* Backgrounds */
   bg0:  "#07060A",
@@ -68,13 +73,17 @@ export const TABLE_STATUS = {
 };
 
 export const ORDER_STATUS = {
-  STOCKÉE:               { label:"Stockée",            color:C.mutedL   },
-  EN_ATTENTE_ACCEPTATION:{ label:"En attente",          color:C.warning  },
-  EN_PRÉPARATION:        { label:"En préparation",      color:C.info     },
-  EN_ATTENTE_LIVRAISON:  { label:"Prête à servir",      color:C.gold     },
-  LIVRÉE:                { label:"Livrée",              color:C.success  },
-  ANNULÉE:               { label:"Annulée",             color:C.muted    },
-  REFUSÉE:               { label:"Refusée",             color:C.danger   },
+  STOCKÉE:               { label:"Stockée",              color:C.mutedL   },
+  EN_ATTENTE_ACCEPTATION:{ label:"En attente",            color:C.warning  },
+  EN_PRÉPARATION:        { label:"En préparation",        color:C.info     },
+  EN_ATTENTE_LIVRAISON:  { label:"Prête à servir",        color:C.gold     },
+  // ── Nouveaux statuts paiement ──────────────────────────────
+  EN_ATTENTE_PAIEMENT:   { label:"Attente paiement",      color:C.purple   },
+  PAYÉE:                 { label:"Payée",                 color:C.success  },
+  // ── Statuts terminaux ──────────────────────────────────────
+  LIVRÉE:                { label:"Livrée",                color:C.success  },
+  ANNULÉE:               { label:"Annulée",               color:C.muted    },
+  REFUSÉE:               { label:"Refusée",               color:C.danger   },
 };
 
 export const MVT_TYPE_META = {
@@ -90,18 +99,32 @@ export const MVT_STATUS_META = {
 };
 
 /* ── Helpers ─────────────────────────────────────────────── */
-export const fmt  = (n) => (n ?? 0).toLocaleString("fr-FR") + " FCFA";
-export const now  = ()  => new Date().toISOString();
+export const fmt = (n) =>
+  (n ?? 0).toLocaleString("fr-FR", { minimumFractionDigits: 0 }) + " FCFA";
+
+export const now = () => new Date().toISOString();
+
 export const timeAgo = (iso) => {
   if (!iso) return "";
-  const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return "à l'instant";
-  if (m < 60) return `il y a ${m}mn`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `il y a ${h}h`;
-  return `il y a ${Math.floor(h / 24)}j`;
+  const diff = Math.floor((Date.now() - new Date(iso)) / 1000);
+  if (diff < 60)  return `${diff}s`;
+  if (diff < 3600) return `${Math.floor(diff/60)}min`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h`;
+  return `${Math.floor(diff/86400)}j`;
 };
+/* ── Helpers ─────────────────────────────────────────────── */
+// export const fmt  = (n) => (n ?? 0).toLocaleString("fr-FR") + " FCFA";
+// export const now  = ()  => new Date().toISOString();
+// export const timeAgo = (iso) => {
+//   if (!iso) return "";
+//   const diff = Date.now() - new Date(iso).getTime();
+//   const m = Math.floor(diff / 60000);
+//   if (m < 1) return "à l'instant";
+//   if (m < 60) return `il y a ${m}mn`;
+//   const h = Math.floor(m / 60);
+//   if (h < 24) return `il y a ${h}h`;
+//   return `il y a ${Math.floor(h / 24)}j`;
+// };
 
 /* ── Global CSS ──────────────────────────────────────────── */
 export function injectGlobalCSS() {
