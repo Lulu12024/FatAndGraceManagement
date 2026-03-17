@@ -106,8 +106,13 @@ class TableViewSet(viewsets.ModelViewSet):
                 {'detail': "La table n'est pas en service"},
                 status=status.HTTP_422_UNPROCESSABLE_ENTITY
             )
-        # Check all orders are in a closable state
-        non_closed = table.commandes.exclude(
+        # Filter orders from the current session only
+        session_orders = table.commandes.all()
+        if table.date_ouverture:
+            session_orders = session_orders.filter(date_commande__gte=table.date_ouverture)
+
+        # Check all session orders are in a closable state
+        non_closed = session_orders.exclude(
             statut__in=['EN_ATTENTE_PAIEMENT', 'PAYEE', 'ANNULEE', 'REFUSEE']
         ).exists()
         if non_closed:
@@ -115,8 +120,8 @@ class TableViewSet(viewsets.ModelViewSet):
                 {'detail': "Des commandes ne sont pas encore livrées ou payées"},
                 status=status.HTTP_422_UNPROCESSABLE_ENTITY
             )
-        # Calculate total from unpaid orders only
-        total = table.commandes.filter(statut='EN_ATTENTE_PAIEMENT').aggregate(
+        # Calculate total from unpaid session orders only
+        total = session_orders.filter(statut='EN_ATTENTE_PAIEMENT').aggregate(
             total=Sum('prix_total')
         )['total'] or Decimal('0.00')
 
@@ -142,16 +147,19 @@ class TableViewSet(viewsets.ModelViewSet):
                 status=status.HTTP_422_UNPROCESSABLE_ENTITY
             )
 
-        # Build items snapshot from all orders (paid + unpaid)
+        # Build items snapshot from unpaid orders of current session only
+        session_orders = table.commandes.filter(statut='EN_ATTENTE_PAIEMENT')
+        if table.date_ouverture:
+            session_orders = session_orders.filter(date_commande__gte=table.date_ouverture)
+
         items_snapshot = []
-        for commande in table.commandes.filter(statut__in=['EN_ATTENTE_PAIEMENT', 'PAYEE']):
+        for commande in session_orders:
             for cp in commande.commandeplat_set.all():
                 items_snapshot.append({
                     'nom': cp.plat.nom,
                     'qte': cp.quantite,
                     'prix': float(cp.prix_unitaire),
                     'commande_id': commande.order_id,
-                    'deja_payee': commande.statut == 'PAYEE',
                 })
 
         serializer = PaymentSerializer(data=request.data)
@@ -167,7 +175,7 @@ class TableViewSet(viewsets.ModelViewSet):
         }
 
         # Find the serveur from the first unpaid order
-        first_order = table.commandes.filter(statut='EN_ATTENTE_PAIEMENT').first()
+        first_order = session_orders.first()
         serveur = first_order.serveur if first_order else None
 
         # Create invoice
@@ -182,8 +190,8 @@ class TableViewSet(viewsets.ModelViewSet):
             items_snapshot=items_snapshot,
         )
 
-        # Mark all remaining unpaid orders as PAYEE
-        table.commandes.filter(statut='EN_ATTENTE_PAIEMENT').update(
+        # Mark all remaining unpaid session orders as PAYEE
+        session_orders.update(
             statut='PAYEE', is_paid=True, date_paiement=timezone.now()
         )
 
@@ -563,20 +571,36 @@ class OrderViewSet(viewsets.ModelViewSet):
         commande.date_paiement = timezone.now()
         commande.save()
 
+        # Check if this was the last unpaid order of the current session
+        table = commande.table
+        remaining = table.commandes.filter(statut='EN_ATTENTE_PAIEMENT')
+        if table.date_ouverture:
+            remaining = remaining.filter(date_commande__gte=table.date_ouverture)
+
+        table_closed = not remaining.exists()
+        if table_closed:
+            # No more unpaid orders — reset the table as if closed normally
+            table.statut = 'DISPONIBLE'
+            table.montant_total = Decimal('0.00')
+            table.date_ouverture = None
+            table.date_cloture = None
+            table.save()
+
         log_action(
             user=request.user, action='CREATE',
             type_action='Paiement commande individuelle',
-            description=f"Commande {commande.order_id} payée — {data['mode_paiement']} — {data['montant']}",
+            description=f"Commande {commande.order_id} payée — {data['mode_paiement']} — {data['montant']}" + (" (table libérée)" if table_closed else ""),
             table_name='facture', record_id=facture.id, request=request
         )
 
         return Response({
             'order': OrderSerializer(commande).data,
+            'table_closed': table_closed,
             'invoice': {
                 'id': facture.numero_facture,
                 'commande_id': commande.order_id,
-                'table_id': commande.table.id,
-                'table_num': commande.table.numero,
+                'table_id': table.id,
+                'table_num': table.numero,
                 'montant': float(facture.montant_total),
                 'pourboire': float(facture.pourboire),
                 'mode_paiement': data['mode_paiement'],

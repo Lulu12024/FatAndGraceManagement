@@ -39,10 +39,11 @@ class Table(models.Model):
         return f"Table {self.numero} - {self.get_statut_display()}"
 
     def calculer_montant_total(self):
-        """Calcule le montant total des commandes en attente de paiement de cette table"""
-        total = self.commandes.filter(
-            statut='EN_ATTENTE_PAIEMENT'
-        ).aggregate(
+        """Calcule le montant total des commandes en attente de paiement de cette table (session courante)"""
+        qs = self.commandes.filter(statut='EN_ATTENTE_PAIEMENT')
+        if self.date_ouverture:
+            qs = qs.filter(date_commande__gte=self.date_ouverture)
+        total = qs.aggregate(
             total=models.Sum('prix_total')
         )['total'] or Decimal('0.00')
         self.montant_total = total
