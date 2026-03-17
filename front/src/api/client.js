@@ -6,7 +6,7 @@
 
 // export const BASE_URL = process.env.REACT_APP_API_URL || "http://10.64.10.53:8001/api";
 
-export const BASE_URL = process.env.REACT_APP_API_URL || "https://fatandgracemanagement.onrender.com/api";
+export const BASE_URL = process.env.REACT_APP_API_URL || "http://127.0.0.1:8000/api";
 
 /* ─── Token helpers ─────────────────────────────────── */
 export const getToken = () => localStorage.getItem("fg_token");
