@@ -1,12 +1,11 @@
 {
-    
     "KEY": "django-insecure-%ckybrzgg-oms^kg2^m*3sp)zgjzrjeg18ww7h+5k5u0l8#3=w",
     "SALT": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",
-    "NAME": "stock_db",
-    "USER": "postgres",
-    "HOST": "localhost",
+    "NAME": "fate_and_grace_db",
+    "USER": "fate_and_grace_db_user",
+    "HOST": "dpg-d6n8p9rh46gs73c51uk0-a.oregon-postgres.render.com",
     "PORT": "5432",
-    "PASS": "#!@dm1n!#",
+    "PASS": "uh036kvrjN0zjQWJFYsFrifzjz62S9Fl",
 
     "JWT_ACCESS_TOKEN_LIFETIME": 60,
     "JWT_REFRESH_TOKEN_LIFETIME": 1440,
