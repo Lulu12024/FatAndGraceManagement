@@ -573,11 +573,11 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         # Check if this was the last unpaid order of the current session
         table = commande.table
-        remaining = table.commandes.filter(statut='EN_ATTENTE_PAIEMENT')
+        done = table.commandes.exclude(statut='PAYEE')
         if table.date_ouverture:
-            remaining = remaining.filter(date_commande__gte=table.date_ouverture)
+            done = done.filter(date_commande__gte=table.date_ouverture)
 
-        table_closed = not remaining.exists()
+        table_closed = not done.exists()
         if table_closed:
             # No more unpaid orders — reset the table as if closed normally
             table.statut = 'DISPONIBLE'
