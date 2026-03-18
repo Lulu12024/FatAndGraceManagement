@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { injectGlobalCSS, C, TABLE_STATUS } from "./styles/tokens";
-import { useToast, useOfflineDetect, handleApiError } from "./hooks";
+import { useToast, useOfflineDetect, handleApiError, useLocalState } from "./hooks";
 import { authService } from "./api/auth";
 import { tablesService } from "./api/tables";
 import { ordersService } from "./api/orders";
@@ -38,7 +38,6 @@ import StatsScreen from "./screens/StatsScreen";
 import PlatsScreen from "./screens/PlatsScreen";
 import DemandesScreen from "./screens/DemandesScreen";
 import { getUser } from "./api/client"; 
-
 export default function App() {
   useEffect(() => { injectGlobalCSS(); }, []);
 
@@ -46,7 +45,7 @@ export default function App() {
   const [user, setUser] = useState(() => getUser());
 
   // Navigation
-  const [screen, setScreen]       = useState("dashboard");
+  const [screen, setScreen] = useLocalState("fg_screen", "dashboard");
   const [collapsed, setCollapsed] = useState(false);
   const [selTable, setSelTable]   = useState(null);
 
