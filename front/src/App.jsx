@@ -4,7 +4,7 @@
  */
 import { useState, useEffect, useCallback, useMemo } from "react";
 import { injectGlobalCSS, C, TABLE_STATUS } from "./styles/tokens";
-import { useToast, useOfflineDetect, handleApiError } from "./hooks";
+import { useToast, useOfflineDetect, handleApiError, useLocalState } from "./hooks";
 import { authService } from "./api/auth";
 import { tablesService } from "./api/tables";
 import { ordersService } from "./api/orders";
@@ -38,7 +38,6 @@ import StatsScreen from "./screens/StatsScreen";
 import PlatsScreen from "./screens/PlatsScreen";
 import DemandesScreen from "./screens/DemandesScreen";
 import { getUser } from "./api/client"; 
-
 export default function App() {
   useEffect(() => { injectGlobalCSS(); }, []);
 
@@ -46,7 +45,7 @@ export default function App() {
   const [user, setUser] = useState(() => getUser());
 
   // Navigation
-  const [screen, setScreen]       = useState("dashboard");
+  const [screen, setScreen] = useLocalState("fg_screen", "dashboard");
   const [collapsed, setCollapsed] = useState(false);
   const [selTable, setSelTable]   = useState(null);
 
@@ -97,6 +96,28 @@ export default function App() {
     return cleanup;
   }, [user]); // eslint-disable-line
 
+  useEffect(() => {
+    if (!user) return;
+    if (!("Notification" in window)) return; // navigateur ne supporte pas
+ 
+    if (Notification.permission === "default") {
+      // On attend 3 secondes après la connexion pour ne pas agresser l'utilisateur
+      const timer = setTimeout(() => {
+        Notification.requestPermission().then((permission) => {
+          if (permission === "granted") {
+            notificationsService.subscribePush();
+          }
+        });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+ 
+    if (Notification.permission === "granted") {
+      // Permission déjà accordée (reconnexion) → re-s'abonner silencieusement
+      notificationsService.subscribePush();
+    }
+  }, [user]);
+  
   // Unauthorized handler
   useEffect(() => {
     const handler = () => { setUser(null); toast.error("Session expirée","Veuillez vous reconnecter."); };
