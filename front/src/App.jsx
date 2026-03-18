@@ -96,6 +96,28 @@ export default function App() {
     return cleanup;
   }, [user]); // eslint-disable-line
 
+  useEffect(() => {
+    if (!user) return;
+    if (!("Notification" in window)) return; // navigateur ne supporte pas
+ 
+    if (Notification.permission === "default") {
+      // On attend 3 secondes après la connexion pour ne pas agresser l'utilisateur
+      const timer = setTimeout(() => {
+        Notification.requestPermission().then((permission) => {
+          if (permission === "granted") {
+            notificationsService.subscribePush();
+          }
+        });
+      }, 3000);
+      return () => clearTimeout(timer);
+    }
+ 
+    if (Notification.permission === "granted") {
+      // Permission déjà accordée (reconnexion) → re-s'abonner silencieusement
+      notificationsService.subscribePush();
+    }
+  }, [user]);
+  
   // Unauthorized handler
   useEffect(() => {
     const handler = () => { setUser(null); toast.error("Session expirée","Veuillez vous reconnecter."); };

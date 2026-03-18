@@ -259,6 +259,55 @@ export const notificationsService = {
     }
     return () => ws && ws.close();
   },
+  /**
+   * S'abonner aux Push Notifications (Web Push / VAPID).
+   * À appeler après que l'utilisateur a accordé la permission.
+   * La clé publique VAPID doit être dans .env :
+   *   REACT_APP_VAPID_PUBLIC_KEY=votre_cle_publique
+   */
+  async subscribePush() {
+    if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+      console.warn("[Push] Non supporté sur ce navigateur");
+      return null;
+    }
+    const vapidKey = process.env.REACT_APP_VAPID_PUBLIC_KEY;
+    if (!vapidKey) {
+      console.warn("[Push] REACT_APP_VAPID_PUBLIC_KEY manquante dans .env");
+      return null;
+    }
+ 
+    try {
+      // Convertir la clé VAPID base64url → Uint8Array
+      const padding  = "=".repeat((4 - (vapidKey.length % 4)) % 4);
+      const base64   = (vapidKey + padding).replace(/-/g, "+").replace(/_/g, "/");
+      const rawData  = window.atob(base64);
+      const appKey   = Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
+ 
+      const reg = await navigator.serviceWorker.ready;
+      const sub = await reg.pushManager.subscribe({
+        userVisibleOnly:      true,
+        applicationServerKey: appKey,
+      });
+ 
+      // Extraire les clés de l'abonnement
+      const p256dh = btoa(String.fromCharCode(...new Uint8Array(sub.getKey("p256dh"))));
+      const auth   = btoa(String.fromCharCode(...new Uint8Array(sub.getKey("auth"))));
+ 
+      // Envoyer l'abonnement au backend Django
+      await api.post("/notifications/push-subscribe/", {
+        endpoint: sub.endpoint,
+        p256dh,
+        auth,
+      });
+ 
+      console.log("[Push] Abonnement enregistré ✅");
+      return sub;
+    } catch (err) {
+      // L'utilisateur a refusé ou une erreur technique — on n'interrompt pas l'app
+      console.warn("[Push] Abonnement échoué:", err.message);
+      return null;
+    }
+  },
 };
 
 /* ── Central export ─────────────────────────────────────── */
