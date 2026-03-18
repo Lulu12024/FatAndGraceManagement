@@ -204,6 +204,7 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
   };
 
   /* ── Paiement commande individuelle ─────────────────────────────────────── */
+  // APRÈS
   const processOrderPayment = async () => {
     const order = showOrderPayM;
     if (!order) return;
@@ -214,11 +215,25 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
         montant: Number(order.montant || 0),
         pourboire: Number(pourboire),
       });
+
+      // Mettre à jour la commande payée
       setOrders(p => p.map(o =>
         o.id === order.id
           ? { ...o, status: normOrder(updatedOrder.status ?? "PAYEE"), is_paid: true }
           : o
       ));
+
+      // Recharger la table depuis l'API pour avoir son statut à jour
+      // (le backend peut l'avoir passée en DISPONIBLE si c'était la dernière commande)
+      try {
+        const freshTable = await tablesService.get(table.id);
+        if (freshTable) {
+          setTables(p => p.map(t => t.id === table.id ? { ...t, ...freshTable } : t));
+        }
+      } catch (_) {
+        // Si l'API échoue, on ne bloque pas — la table sera rechargée au prochain refresh
+      }
+
       setShowOrderPayM(null);
       setPayMode("Espèces");
       setPourboire("0");
