@@ -64,6 +64,7 @@ const NAV = {
     { id:"stock-history",icon:"≡",  label:"Historique" },
     { id:"stock-request",icon:"◉",  label:"Demande stock" },
     { id:"invoices",     icon:"◻",  label:"Factures" },
+    { id:"import",       icon:"⬆", label:"Imports" },
     { id:"reports",      icon:"◎",  label:"Rapports" },
     { id:"team",         icon:"◐",  label:"Utilisateurs" },
     { id:"audit",        icon:"◑",  label:"Audit" },

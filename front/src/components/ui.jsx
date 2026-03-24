@@ -1,55 +1,29 @@
 import { useState } from "react";
 import { C } from "../styles/tokens";
 
+
 const Logo = ({ size = 48, withText = false }) => (
   <div style={{ display:"flex", alignItems:"center", gap:12, flexShrink:0 }}>
-    <svg width={size} height={size} viewBox="0 0 120 120" style={{ flexShrink:0 }}>
-      <defs>
-        <radialGradient id="gBg" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stopColor="#2A2218"/>
-          <stop offset="100%" stopColor="#0E0C08"/>
-        </radialGradient>
-        <linearGradient id="gGold" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stopColor="#E2C478"/>
-          <stop offset="50%" stopColor="#C9A84C"/>
-          <stop offset="100%" stopColor="#8A7030"/>
-        </linearGradient>
-        <linearGradient id="gGold2" x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#F0D898"/>
-          <stop offset="100%" stopColor="#C9A84C"/>
-        </linearGradient>
-      </defs>
-      {/* Circle */}
-      <circle cx="60" cy="60" r="57" fill="url(#gBg)" stroke="url(#gGold)" strokeWidth="1.5"/>
-      {/* Inner ring */}
-      <circle cx="60" cy="60" r="50" fill="none" stroke="url(#gGold)" strokeWidth="0.5" opacity="0.35"/>
-      {/* Laurel branches */}
-      {[...Array(8)].map((_, i) => {
-        const a = (-80 + i * 18) * Math.PI / 180;
-        const r = 40; const x = 60 + r * Math.cos(a); const y = 60 + r * Math.sin(a);
-        return <ellipse key={`l${i}`} cx={x} cy={y} rx="5.5" ry="2.8" fill="url(#gGold)" opacity="0.8"
-          transform={`rotate(${(-80 + i * 18) + 90} ${x} ${y})`}/>;
-      })}
-      {[...Array(8)].map((_, i) => {
-        const a = (-100 - i * 18) * Math.PI / 180;
-        const r = 40; const x = 60 + r * Math.cos(a); const y = 60 + r * Math.sin(a);
-        return <ellipse key={`r${i}`} cx={x} cy={y} rx="5.5" ry="2.8" fill="url(#gGold)" opacity="0.8"
-          transform={`rotate(${(-100 - i * 18) - 90} ${x} ${y})`}/>;
-      })}
-      {/* Stems */}
-      <path d="M 42 78 Q 60 74 78 78" stroke="url(#gGold)" strokeWidth="1" fill="none" opacity="0.6"/>
-      {/* FG letters */}
-      <text x="41" y="68" fontFamily="'Playfair Display',serif" fontSize="26" fontWeight="700"
-        fill="url(#gGold2)" textAnchor="middle">F</text>
-      <text x="79" y="68" fontFamily="'Playfair Display',serif" fontSize="26" fontWeight="700"
-        fill="url(#gGold2)" textAnchor="middle">G</text>
-      {/* Vertical divider */}
-      <line x1="60" y1="46" x2="60" y2="72" stroke="url(#gGold)" strokeWidth="0.8" opacity="0.4"/>
-    </svg>
+    <img
+      src="/logo.png"
+      alt="Fate & Grâce"
+      width={size}
+      height={size}
+      style={{
+        borderRadius: "50%",
+        objectFit: "cover",
+        flexShrink: 0,
+        filter: "drop-shadow(0 0 8px rgba(201,168,76,0.4))",
+      }}
+    />
     {withText && (
       <div style={{ minWidth:0 }}>
-        <div className="serif" style={{ fontSize:17, fontWeight:600, color:C.goldL, letterSpacing:3, lineHeight:1 }}>FATE & GRÂCE</div>
-        <div style={{ fontSize:9, color:C.muted, letterSpacing:3.5, textTransform:"uppercase", marginTop:3 }}>Bakery · Restaurant · Bar</div>
+        <div className="serif" style={{ fontSize:17, fontWeight:600, color:C.goldL, letterSpacing:3, lineHeight:1 }}>
+          FATE & GRÂCE
+        </div>
+        <div style={{ fontSize:9, color:C.muted, letterSpacing:3.5, textTransform:"uppercase", marginTop:3 }}>
+          {/* Bakery · Restaurant · Bar */}
+        </div>
       </div>
     )}
   </div>

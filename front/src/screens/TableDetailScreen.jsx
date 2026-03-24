@@ -7,18 +7,16 @@ import { handleApiError } from "../hooks/index";
 
 const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, plats }) => {
   const [showOrderForm,    setShowOrderForm]    = useState(false);
-  const [showPayModal,     setShowPayModal]     = useState(false);    // paiement table entière
-  const [showOrderPayM,    setShowOrderPayM]    = useState(null);     // paiement commande individuelle (objet order)
+  const [showPayModal,     setShowPayModal]     = useState(false);
+  const [showOrderPayM,    setShowOrderPayM]    = useState(null);
   const [showCancelM,      setShowCancelM]      = useState(null);
   const [newItems,         setNewItems]         = useState([]);
   const [obs,              setObs]              = useState("");
   const [motifCanc,        setMotifCanc]        = useState("");
-  // États partagés paiement (table + individuel)
   const [payMode,          setPayMode]          = useState("Espèces");
   const [pourboire,        setPourboire]        = useState("0");
   const [loading,          setLoading]          = useState(false);
 
-  // ── Normalisation statuts API (sans accent) → clés tokens ──────────────
   const ORDER_NORM = {
     "LIVREE":              "LIVRÉE",
     "ANNULEE":             "ANNULÉE",
@@ -26,7 +24,6 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
     "EN_PREPARATION":      "EN_PRÉPARATION",
     "STOCKEE":             "STOCKÉE",
     "PAYEE":               "PAYÉE",
-    // EN_ATTENTE_PAIEMENT et EN_ATTENTE_ACCEPTATION restent tels quels
   };
   const TABLE_NORM = {
     "RESERVEE":            "RÉSERVÉE",
@@ -39,16 +36,14 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
   const normOrder = (s) => ORDER_NORM[s] ?? s;
   const normTable = (s) => TABLE_NORM[s] ?? s;
 
-  // Commande "livrée" = en attente de paiement (nouveau workflow)
   const IS_DELIVERED = (s) =>
     s === "EN_ATTENTE_PAIEMENT" || s === "PAYEE" || s === "PAYÉE" ||
-    s === "LIVREE" || s === "LIVRÉE"; // compat ascendante
+    s === "LIVREE" || s === "LIVRÉE";
 
   const IS_PAID = (s) => s === "PAYEE" || s === "PAYÉE";
 
   const tStatus = normTable(table.status);
 
-  // ── Séparation session courante vs historique ───────────────────────────
   const allTableOrders = orders.filter(o =>
     (o.tableId === table.id) || (o.table_id === table.id)
   );
@@ -63,40 +58,50 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
     ? allTableOrders.filter(o => new Date(o.created_at ?? o.createdAt) < sessionStart)
     : [];
 
-  // Commandes actives (non annulées / refusées)
   const activeOrders = tableOrders.filter(o =>
     !["ANNULÉE","ANNULEE","REFUSÉE","REFUSEE"].includes(o.status)
   );
 
-  // Montant total de la session
   const totalAmount = activeOrders.reduce((s, o) => s + Number(o.montant || 0), 0);
 
-  // Montant déjà encaissé individuellement
   const montantDejaPayé = activeOrders
     .filter(o => IS_PAID(o.status))
     .reduce((s, o) => s + Number(o.montant || 0), 0);
 
-  // Reste à payer pour le paiement de la table entière
   const resteAPayer = totalAmount - montantDejaPayé;
 
-  // Toutes les commandes actives sont livrées (ou déjà payées) → on peut clôturer
   const allDelivered =
     activeOrders.length > 0 &&
     activeOrders.every(o => IS_DELIVERED(o.status));
 
-  // Commandes encore en attente de paiement individuel
   const ordersEnAttentePaiement = activeOrders.filter(
     o => o.status === "EN_ATTENTE_PAIEMENT"
   );
 
   const tableNum = table.num ?? (table.numero ?? "").replace(/\D+/g, "") ?? "?";
 
+  // ── Ajouter / incrémenter un plat ───────────────────────────────────────
   const addItem = (plat) => setNewItems(p => {
     const ex = p.find(i => i.platId === plat.id);
     return ex
       ? p.map(i => i.platId === plat.id ? { ...i, qte: i.qte + 1 } : i)
       : [...p, { platId: plat.id, nom: plat.nom, qte: 1, prix: plat.prix }];
   });
+
+  // ── Modifier la quantité directement ────────────────────────────────────
+  const setQte = (platId, val) => {
+    const v = Math.max(1, parseInt(val) || 1);
+    setNewItems(p => p.map(i => i.platId === platId ? { ...i, qte: v } : i));
+  };
+
+  const incrQte = (platId) =>
+    setNewItems(p => p.map(i => i.platId === platId ? { ...i, qte: i.qte + 1 } : i));
+
+  const decrQte = (platId) =>
+    setNewItems(p => p.map(i => i.platId === platId ? { ...i, qte: Math.max(1, i.qte - 1) } : i));
+
+  const removeItem = (platId) =>
+    setNewItems(p => p.filter(i => i.platId !== platId));
 
   /* ── Créer une commande ────────────────────────────────────────────────── */
   const submitOrder = async () => {
@@ -147,7 +152,7 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
     finally { setLoading(false); }
   };
 
-  /* ── Confirmer livraison → EN_ATTENTE_PAIEMENT ─────────────────────────── */
+  /* ── Confirmer livraison ────────────────────────────────────────────────── */
   const deliverOrder = async (order) => {
     setLoading(true);
     try {
@@ -184,7 +189,6 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
         montant: resteAPayer,
         pourboire: Number(pourboire),
       });
-      // Marquer toutes les commandes EN_ATTENTE_PAIEMENT restantes comme PAYÉE
       setOrders(p => p.map(o =>
         (o.tableId === table.id || o.table_id === table.id) &&
         o.status === "EN_ATTENTE_PAIEMENT"
@@ -204,7 +208,6 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
   };
 
   /* ── Paiement commande individuelle ─────────────────────────────────────── */
-  // APRÈS
   const processOrderPayment = async () => {
     const order = showOrderPayM;
     if (!order) return;
@@ -215,25 +218,17 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
         montant: Number(order.montant || 0),
         pourboire: Number(pourboire),
       });
-
-      // Mettre à jour la commande payée
       setOrders(p => p.map(o =>
         o.id === order.id
           ? { ...o, status: normOrder(updatedOrder.status ?? "PAYEE"), is_paid: true }
           : o
       ));
-
-      // Recharger la table depuis l'API pour avoir son statut à jour
-      // (le backend peut l'avoir passée en DISPONIBLE si c'était la dernière commande)
       try {
         const freshTable = await tablesService.get(table.id);
         if (freshTable) {
           setTables(p => p.map(t => t.id === table.id ? { ...t, ...freshTable } : t));
         }
-      } catch (_) {
-        // Si l'API échoue, on ne bloque pas — la table sera rechargée au prochain refresh
-      }
-
+      } catch (_) {}
       setShowOrderPayM(null);
       setPayMode("Espèces");
       setPourboire("0");
@@ -256,11 +251,8 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
 
     return (
       <Card key={o.id} style={{ padding: 0, overflow: "hidden", opacity: isPaid ? 0.75 : 1 }}>
-        {/* Barre colorée selon statut */}
         <div style={{ height: 2, background: ost.color }}/>
-
         <div style={{ padding: "14px 18px" }}>
-          {/* En-tête commande */}
           <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", marginBottom: 10 }}>
             <div>
               <div style={{ display:"flex", alignItems:"center", gap: 8 }}>
@@ -286,7 +278,6 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
             </div>
           </div>
 
-          {/* Liste des plats */}
           {o.items && o.items.length > 0 && (
             <div style={{ marginBottom: 10 }}>
               {o.items.map((it, i) => (
@@ -307,32 +298,19 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
             </div>
           )}
 
-          {/* Actions */}
           <div style={{ display:"flex", gap: 8, flexWrap:"wrap", marginTop: 6 }}>
-            {/* Livrer (serveur/gérant) */}
             {isLivrable && ["serveur","gérant","admin"].includes(role) && (
               <Btn variant="success" size="sm" loading={loading} onClick={() => deliverOrder(o)}>
                 ✓ Livrer
               </Btn>
             )}
-
-            {/* 💳 Payer cette commande (gérant uniquement, commande EN_ATTENTE_PAIEMENT) */}
             {isEnAttPaiem && isGerant && (
-              <Btn
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setShowOrderPayM(o);
-                  setPayMode("Espèces");
-                  setPourboire("0");
-                }}
-                style={{ borderColor: C.purple, color: C.purple }}
-              >
+              <Btn variant="outline" size="sm"
+                onClick={() => { setShowOrderPayM(o); setPayMode("Espèces"); setPourboire("0"); }}
+                style={{ borderColor: C.purple, color: C.purple }}>
                 💳 Payer cette commande
               </Btn>
             )}
-
-            {/* Annuler (serveur/gérant selon statut) */}
             {isCancellable && ["serveur","gérant","admin"].includes(role) && (
               <Btn variant="danger" size="sm" onClick={() => setShowCancelM(o)}>
                 Annuler
@@ -364,16 +342,13 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
         </div>
 
         <div style={{ display:"flex", gap: 8, flexWrap:"wrap" }}>
-          {/* Nouvelle commande */}
           {["serveur","gérant","admin"].includes(role) &&
            ["RÉSERVÉE","EN_SERVICE","COMMANDES_PASSÉE"].includes(tStatus) && (
             <Btn variant="outline" onClick={() => setShowOrderForm(true)}>+ Nouvelle commande</Btn>
           )}
-          {/* Clôturer la table */}
           {allDelivered && ["serveur","gérant","admin"].includes(role) && tStatus === "EN_SERVICE" && (
             <Btn variant="info" loading={loading} onClick={closeTable}>Clôturer la table</Btn>
           )}
-          {/* Payer la table entière */}
           {tStatus === "EN_ATTENTE_PAIEMENT" && isGerant && (
             <Btn variant="success" onClick={() => { setShowPayModal(true); setPourboire("0"); }}>
               💳 Régler la table
@@ -400,8 +375,6 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
               {fmt(totalAmount)}
             </div>
           </div>
-
-          {/* Déjà encaissé — visible seulement si > 0 */}
           {montantDejaPayé > 0 && (
             <div>
               <div style={{ fontSize: 10, color: C.muted, textTransform:"uppercase", letterSpacing: 1.5 }}>
@@ -412,7 +385,6 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
               </div>
             </div>
           )}
-
           <div>
             <div style={{ fontSize: 10, color: C.muted, textTransform:"uppercase", letterSpacing: 1.5 }}>
               Commandes actives
@@ -485,26 +457,45 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
         onClose={() => { setShowOrderForm(false); setNewItems([]); setObs(""); }}
         title="Nouvelle commande" width={560}>
         <div style={{ display:"flex", flexDirection:"column", gap: 18 }}>
+
+          {/* Menu disponible */}
           <div>
             <div style={{ fontSize: 11, color: C.muted, letterSpacing: 1.2, textTransform:"uppercase", marginBottom: 10 }}>
               Menu disponible
             </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap: 8, maxHeight: 260, overflowY:"auto" }}>
-              {(plats || []).filter(p => p.disponible).map(p => (
-                <button key={p.id}
-                  onClick={() => addItem(p)}
-                  style={{
-                    background: C.bg3, border: `1px solid ${C.bg5}`,
-                    borderRadius: 8, padding:"10px 12px", cursor:"pointer",
-                    textAlign:"left", color: C.cream,
-                  }}>
-                  <div style={{ fontSize: 13, fontWeight: 600 }}>{p.nom}</div>
-                  <div style={{ fontSize: 11, color: C.goldL, marginTop: 2 }}>{fmt(p.prix)}</div>
-                </button>
-              ))}
+              {(plats || []).filter(p => p.disponible).map(p => {
+                const inCart = newItems.find(i => i.platId === p.id);
+                return (
+                  <button key={p.id}
+                    onClick={() => addItem(p)}
+                    style={{
+                      background: inCart ? `${C.goldFaint}` : C.bg3,
+                      border: `1px solid ${inCart ? C.gold : C.bg5}`,
+                      borderRadius: 8, padding:"10px 12px", cursor:"pointer",
+                      textAlign:"left", color: C.cream,
+                      position: "relative", transition: "border-color .15s, background .15s",
+                    }}>
+                    {/* Badge quantité si déjà dans la sélection */}
+                    {inCart && (
+                      <span style={{
+                        position:"absolute", top: 6, right: 8,
+                        background: C.gold, color: "#07050A",
+                        fontSize: 10, fontWeight: 700,
+                        borderRadius: 10, padding:"1px 6px",
+                      }}>
+                        ×{inCart.qte}
+                      </span>
+                    )}
+                    <div style={{ fontSize: 13, fontWeight: 600 }}>{p.nom}</div>
+                    <div style={{ fontSize: 11, color: C.goldL, marginTop: 2 }}>{fmt(p.prix)}</div>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
+          {/* Sélection avec contrôles de quantité */}
           {newItems.length > 0 && (
             <>
               <Divider/>
@@ -512,20 +503,79 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
                 <div style={{ fontSize: 11, color: C.muted, textTransform:"uppercase", letterSpacing: 1.2, marginBottom: 8 }}>
                   Sélection
                 </div>
-                {newItems.map((it, i) => (
-                  <div key={i} style={{ display:"flex", justifyContent:"space-between",
-                    alignItems:"center", padding:"6px 0", fontSize: 13 }}>
-                    <span style={{ color: C.cream }}>{it.nom}</span>
-                    <div style={{ display:"flex", alignItems:"center", gap: 10 }}>
-                      <span style={{ color: C.muted }}>×{it.qte}</span>
-                      <span style={{ color: C.goldL }}>{fmt(it.prix * it.qte)}</span>
-                      <button onClick={() => setNewItems(p => p.filter((_, j) => j !== i))}
-                        style={{ background:"none", border:"none", color: C.danger, cursor:"pointer", fontSize: 16 }}>×</button>
+                {newItems.map((it) => (
+                  <div key={it.platId} style={{
+                    display:"flex", justifyContent:"space-between",
+                    alignItems:"center", padding:"8px 0",
+                    borderBottom: `1px solid rgba(255,255,255,0.04)`,
+                    fontSize: 13, gap: 10,
+                  }}>
+                    <span style={{ color: C.cream, flex: 1, minWidth: 0 }}>{it.nom}</span>
+                    <div style={{ display:"flex", alignItems:"center", gap: 6, flexShrink: 0 }}>
+                      {/* Bouton − */}
+                      <button
+                        onClick={() => decrQte(it.platId)}
+                        style={{
+                          width: 26, height: 26, borderRadius: 6,
+                          border: `1px solid rgba(255,255,255,0.12)`,
+                          background: "transparent", color: C.cream,
+                          cursor:"pointer", fontSize: 16, lineHeight: 1,
+                          display:"flex", alignItems:"center", justifyContent:"center",
+                          flexShrink: 0,
+                        }}>−</button>
+
+                      {/* Input quantité */}
+                      <input
+                        type="number"
+                        min={1}
+                        value={it.qte}
+                        onChange={e => setQte(it.platId, e.target.value)}
+                        style={{
+                          width: 46, textAlign:"center",
+                          background: C.bg2,
+                          border: `1px solid rgba(255,255,255,0.12)`,
+                          borderRadius: 6, color: C.cream,
+                          fontSize: 13, padding:"3px 0",
+                          fontFamily:"'Raleway',sans-serif",
+                          outline: "none",
+                        }}
+                      />
+
+                      {/* Bouton + */}
+                      <button
+                        onClick={() => incrQte(it.platId)}
+                        style={{
+                          width: 26, height: 26, borderRadius: 6,
+                          border: `1px solid rgba(255,255,255,0.12)`,
+                          background: "transparent", color: C.goldL,
+                          cursor:"pointer", fontSize: 16, lineHeight: 1,
+                          display:"flex", alignItems:"center", justifyContent:"center",
+                          flexShrink: 0,
+                        }}>+</button>
+
+                      {/* Prix */}
+                      <span style={{ color: C.goldL, minWidth: 80, textAlign:"right", fontSize: 13 }}>
+                        {fmt(it.prix * it.qte)}
+                      </span>
+
+                      {/* Supprimer */}
+                      <button
+                        onClick={() => removeItem(it.platId)}
+                        style={{
+                          background:"none", border:"none", color: C.danger,
+                          cursor:"pointer", fontSize: 18, lineHeight: 1,
+                          padding: "0 2px", flexShrink: 0,
+                        }}>×</button>
                     </div>
                   </div>
                 ))}
-                <div style={{ borderTop:`1px solid ${C.bg5}`, marginTop: 8, paddingTop: 8,
-                  display:"flex", justifyContent:"space-between", fontWeight: 700, color: C.cream }}>
+
+                {/* Total */}
+                <div style={{
+                  marginTop: 10, paddingTop: 10,
+                  display:"flex", justifyContent:"space-between",
+                  fontWeight: 700, color: C.cream, fontSize: 14,
+                }}>
                   <span>Total</span>
                   <span style={{ color: C.goldL }}>
                     {fmt(newItems.reduce((s, i) => s + i.prix * i.qte, 0))}
@@ -574,11 +624,9 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
       <Modal
         open={!!showOrderPayM}
         onClose={() => { setShowOrderPayM(null); setPayMode("Espèces"); setPourboire("0"); }}
-        title="Payer cette commande"
-      >
+        title="Payer cette commande">
         {showOrderPayM && (
           <div style={{ display:"flex", flexDirection:"column", gap: 18 }}>
-            {/* Récap commande */}
             <div style={{
               background: C.bg3, border:`1px solid ${C.bg5}`,
               borderRadius: 10, padding: 14,
@@ -595,7 +643,6 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
               ))}
             </div>
 
-            {/* Montant à encaisser */}
             <div style={{
               background: C.purpleBg, border:`1px solid ${C.purpleBdr}`,
               borderRadius: 11, padding: 18, textAlign:"center",
@@ -639,7 +686,6 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
       <Modal open={showPayModal} onClose={() => setShowPayModal(false)} title="Régler la table">
         <div style={{ display:"flex", flexDirection:"column", gap: 18 }}>
 
-          {/* Décompte si certaines commandes déjà payées */}
           {montantDejaPayé > 0 && (
             <div style={{
               background: C.bg3, border:`1px solid ${C.bg5}`,
@@ -663,7 +709,6 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
             </div>
           )}
 
-          {/* Montant principal */}
           <div style={{
             background: C.goldFaint, border:`1px solid ${C.goldBorder}`,
             borderRadius: 11, padding: 18, textAlign:"center",

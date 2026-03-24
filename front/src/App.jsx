@@ -38,6 +38,8 @@ import StatsScreen from "./screens/StatsScreen";
 import PlatsScreen from "./screens/PlatsScreen";
 import DemandesScreen from "./screens/DemandesScreen";
 import { getUser } from "./api/client"; 
+import ImportScreen from "./screens/ImportScreen";
+
 export default function App() {
   useEffect(() => { injectGlobalCSS(); }, []);
 
@@ -223,6 +225,7 @@ export default function App() {
       case "stats":          return <StatsScreen {...sharedProps} orders={orders}/>;
       case "demandes":       return <DemandesScreen {...sharedProps}/>;
       case "menu":           return <PlatsScreen role={role} toast={toast} plats={plats} setPlats={setPlats}/>;
+      case "import":         return <ImportScreen {...sharedProps}  setProducts={setProducts} setMovements={setMovements} setPlats={setPlats}/>;
       default:               return <DashboardScreen {...sharedProps} tables={tables} orders={orders} products={products} movements={movements}/>;
     }
   };
