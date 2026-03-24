@@ -245,7 +245,7 @@ class Facture(models.Model):
 
     @property
     def invoice_id(self):
-        """Retourne l'ID formaté de la facture (FAC-YYYY-XXXX)"""
+        """Retourne l'ID formaté de la facture (BDC-YYYY-XXXX)"""
         return self.numero_facture
 
     def save(self, *args, **kwargs):
@@ -254,7 +254,7 @@ class Facture(models.Model):
             from datetime import datetime
             year = datetime.now().strftime('%Y')
             last_facture = Facture.objects.filter(
-                numero_facture__startswith=f'FAC-{year}'
+                numero_facture__startswith=f'BDC-{year}'
             ).order_by('-numero_facture').first()
             
             if last_facture:
@@ -263,7 +263,7 @@ class Facture(models.Model):
             else:
                 new_num = 1
             
-            self.numero_facture = f'FAC-{year}-{new_num:04d}'
+            self.numero_facture = f'BDC-{year}-{new_num:04d}'
         
         super().save(*args, **kwargs)
 

@@ -249,6 +249,36 @@ class PlatViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated(), IsAdministrateur()]
         return [IsAuthenticated()]
 
+    def create(self, request, *args, **kwargs):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        plat = serializer.save()
+
+        log_action(
+            user=request.user, action='CREATE',
+            type_action='Création plat',
+            description=f"Plat {plat.nom} créé — {plat.prix} FCFA",
+            table_name='plat', record_id=plat.id, request=request
+        )
+
+        return Response(PlatSerializer(plat).data, status=status.HTTP_201_CREATED)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+        plat = serializer.save()
+
+        log_action(
+            user=request.user, action='UPDATE',
+            type_action='Modification plat',
+            description=f"Plat {plat.nom} modifié",
+            table_name='plat', record_id=plat.id, request=request
+        )
+
+        return Response(PlatSerializer(plat).data)
+
     def destroy(self, request, *args, **kwargs):
         plat = self.get_object()
         active_statuts = ['STOCKEE', 'EN_ATTENTE_ACCEPTATION', 'EN_PREPARATION', 'EN_ATTENTE_LIVRAISON']
@@ -260,7 +290,19 @@ class PlatViewSet(viewsets.ModelViewSet):
                 {'detail': "Impossible de supprimer ce plat : il est utilisé dans des commandes actives"},
                 status=status.HTTP_422_UNPROCESSABLE_ENTITY
             )
-        return super().destroy(request, *args, **kwargs)
+
+        plat_nom = plat.nom
+        plat_id = plat.id
+
+        log_action(
+            user=request.user, action='DELETE',
+            type_action='Suppression plat',
+            description=f"Plat {plat_nom} supprimé",
+            table_name='plat', record_id=plat_id, request=request
+        )
+
+        plat.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 # ==================== ORDER (COMMANDE) ====================
@@ -762,20 +804,33 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
         try:
             from reportlab.lib.pagesizes import A4
             from reportlab.pdfgen import canvas
+            import os
+            from django.conf import settings
 
+            logo_path = os.path.join(settings.BASE_DIR, 'stock_management', 'static', 'logo.jpg')
+            if not os.path.exists(logo_path):
+                logo_path = os.path.join(settings.BASE_DIR, 'stock_management', 'static', 'logo.jpg')
+            
             buffer = io.BytesIO()
             p = canvas.Canvas(buffer, pagesize=A4)
             width, height = A4
 
             # Header
+            p.drawImage(logo_path, 50, height - 90, width=50, height=50)
             p.setFont("Helvetica-Bold", 18)
-            p.drawString(50, height - 50, f"FACTURE {facture.numero_facture}")
-            p.setFont("Helvetica", 12)
-            p.drawString(50, height - 80, f"Date: {facture.date_generation.strftime('%d/%m/%Y %H:%M')}")
-            p.drawString(50, height - 100, f"Table: {facture.table.numero}")
+            p.drawString(120, height - 50, f"BON DE COMMANDE {facture.numero_facture}")
 
-            # Colonnes
-            y = height - 140
+            # Infos sous le logo
+            p.setFont("Helvetica", 12)
+            p.drawString(120, height - 70, f"Date: {facture.date_generation.strftime('%d/%m/%Y %H:%M')}")
+            p.drawString(120, height - 90, f"Table: {facture.table.numero}")
+
+            # Ligne de séparation
+            p.line(50, height - 105, width - 50, height - 105)
+
+            # Colonnes — décaler y en conséquence
+            y = height - 130
+
             p.setFont("Helvetica-Bold", 11)
             p.drawString(50, y, "Article")
             p.drawString(300, y, "Qté")
@@ -827,7 +882,7 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
             response = HttpResponse(content, content_type='text/plain')
             response['Content-Disposition'] = f'attachment; filename="{facture.numero_facture}.txt"'
             return response
-
+    
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsGerantOrAdmin])
     def reprint(self, request, pk=None):
         facture = self.get_object()

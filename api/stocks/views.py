@@ -63,6 +63,31 @@ class ProductViewSet(viewsets.ModelViewSet):
             return [IsAuthenticated(), IsGestionnaireOrGerantOrAdmin()]
         return [IsAuthenticated()]
 
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop('partial', False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial)
+        serializer.is_valid(raise_exception=True)
+
+        data = serializer.validated_data
+        unite_id = data.pop('unite_id', None)
+        if unite_id:
+            instance.unite = Unite.objects.get(id=unite_id)
+        # Remove qte_initiale if present (only used on create)
+        data.pop('qte_initiale', None)
+        for attr, value in data.items():
+            setattr(instance, attr, value)
+        instance.save()
+
+        log_action(
+            user=request.user, action='UPDATE',
+            type_action='Modification produit',
+            description=f"Produit {instance.nom} modifié",
+            table_name='produit', record_id=instance.id, request=request
+        )
+
+        return Response(ProductSerializer(instance).data)
+
     def get_queryset(self):
         qs = super().get_queryset()
 
@@ -411,6 +436,13 @@ class DemandeProduitViewSet(viewsets.ModelViewSet):
         except Stock.DoesNotExist:
             pass
 
+        log_action(
+            user=request.user, action='VALIDATE',
+            type_action='Validation demande produit',
+            description=f"Demande #{demande.id} validée — {demande.produit.nom} × {demande.quantite}",
+            table_name='demande_produit', record_id=demande.id, request=request
+        )
+
         return Response(DemandeProduitSerializer(demande).data)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsGestionnaireOrGerantOrAdmin])
@@ -428,5 +460,12 @@ class DemandeProduitViewSet(viewsets.ModelViewSet):
         demande.motif_rejet = motif
         demande.valideur = request.user
         demande.save()
+
+        log_action(
+            user=request.user, action='REJECT',
+            type_action='Rejet demande produit',
+            description=f"Demande #{demande.id} rejetée — {demande.produit.nom}" + (f" — Motif: {motif}" if motif else ""),
+            table_name='demande_produit', record_id=demande.id, request=request
+        )
 
         return Response(DemandeProduitSerializer(demande).data)
