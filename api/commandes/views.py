@@ -8,7 +8,9 @@ from django.db.models import Q, Sum
 from django.utils import timezone
 from django.http import HttpResponse
 from decimal import Decimal
+from rest_framework.decorators import action, api_view, permission_classes
 import io
+from .push_utils import send_push_to_role, send_push_to_user
 
 from .models import Commande, Plat, CommandePlat, Table, Facture, Notification
 from .serializers import (
@@ -376,6 +378,15 @@ class OrderViewSet(viewsets.ModelViewSet):
                 }
             )
 
+            # Push notification sur le téléphone du cuisinier ← ajouter ça
+            send_push_to_user(
+                cuisinier,
+                title="🍽️ Nouvelle commande",
+                body=f"Table {table.numero} — {items_text}",
+                url="/",
+                tag="new_order"
+            )
+
         return Response(
             OrderSerializer(commande).data,
             status=status.HTTP_201_CREATED
@@ -424,6 +435,14 @@ class OrderViewSet(viewsets.ModelViewSet):
                 data={'order_id': commande.order_id, 'table_num': commande.table.numero}
             )
 
+            send_push_to_user(
+                commande.serveur,
+                title="✅ Commande acceptée",
+                body=f"Table {commande.table.numero} — en préparation",
+                tag="order_accepted"
+            )
+            
+
         return Response(OrderSerializer(commande).data)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsCuisinierOrAdmin])
@@ -461,6 +480,12 @@ class OrderViewSet(viewsets.ModelViewSet):
                 message=f"Commande {commande.order_id} refusée — {motif}",
                 data={'order_id': commande.order_id, 'table_num': commande.table.numero, 'motif': motif}
             )
+            send_push_to_user(
+                commande.serveur,
+                title=" Commande rejetée",
+                body=f"Table {commande.table.numero} — {motif}",
+                tag="order_rejected "
+            )
 
         return Response(OrderSerializer(commande).data)
 
@@ -490,6 +515,13 @@ class OrderViewSet(viewsets.ModelViewSet):
                 type='order_ready',
                 message=f"Commande prête : Table {commande.table.numero}",
                 data={'order_id': commande.order_id, 'table_num': commande.table.numero}
+            )
+            send_push_to_user(
+                commande.serveur,
+                title="🍽️ Commande prête",
+                body=f"Table {commande.table.numero} — {commande.order_id}",
+                url="/",
+                tag="order_ready"
             )
 
         return Response(OrderSerializer(commande).data)
@@ -881,3 +913,37 @@ class NotificationViewSet(viewsets.GenericViewSet):
     def read_all(self, request):
         self.get_queryset().filter(is_read=False).update(is_read=True)
         return Response({'detail': 'Toutes les notifications marquées comme lues'})
+
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def push_subscribe(request):
+    """
+    POST /api/notifications/push-subscribe/
+    Body: { endpoint, p256dh, auth }
+    Enregistre ou met à jour l'abonnement push de l'utilisateur courant.
+    """
+    from users.models import PushSubscription  # adapter l'import
+    endpoint = request.data.get("endpoint")
+    p256dh   = request.data.get("p256dh")
+    auth     = request.data.get("auth")
+ 
+    if not all([endpoint, p256dh, auth]):
+        return Response(
+            {"detail": "endpoint, p256dh et auth sont requis"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+ 
+    # Upsert : créer ou mettre à jour si l'endpoint existe déjà
+    PushSubscription.objects.update_or_create(
+        endpoint=endpoint,
+        defaults={
+            "user":   request.user,
+            "p256dh": p256dh,
+            "auth":   auth,
+        }
+    )
+    return Response({"status": "subscribed"}, status=status.HTTP_201_CREATED)
+ 
+ 

@@ -266,11 +266,13 @@ export const notificationsService = {
    *   REACT_APP_VAPID_PUBLIC_KEY=votre_cle_publique
    */
   async subscribePush() {
+    console.log("On est dans subscribePush,");
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
       console.warn("[Push] Non supporté sur ce navigateur");
       return null;
     }
     const vapidKey = process.env.REACT_APP_VAPID_PUBLIC_KEY;
+    
     if (!vapidKey) {
       console.warn("[Push] REACT_APP_VAPID_PUBLIC_KEY manquante dans .env");
       return null;
@@ -282,17 +284,18 @@ export const notificationsService = {
       const base64   = (vapidKey + padding).replace(/-/g, "+").replace(/_/g, "/");
       const rawData  = window.atob(base64);
       const appKey   = Uint8Array.from([...rawData].map((c) => c.charCodeAt(0)));
- 
+
+      console.log("Clé VAPID convertie:", appKey);
       const reg = await navigator.serviceWorker.ready;
       const sub = await reg.pushManager.subscribe({
         userVisibleOnly:      true,
         applicationServerKey: appKey,
       });
- 
+      console.log("Abonnement Push obtenu:", sub);
       // Extraire les clés de l'abonnement
       const p256dh = btoa(String.fromCharCode(...new Uint8Array(sub.getKey("p256dh"))));
       const auth   = btoa(String.fromCharCode(...new Uint8Array(sub.getKey("auth"))));
- 
+      
       // Envoyer l'abonnement au backend Django
       await api.post("/notifications/push-subscribe/", {
         endpoint: sub.endpoint,

@@ -98,26 +98,33 @@ export default function App() {
 
   useEffect(() => {
     if (!user) return;
-    if (!("Notification" in window)) return; // navigateur ne supporte pas
+    if (!("Notification" in window))  {console.log("************** Notification pas présent ********************"); return }; // navigateurupporte ne s pas
  
     if (Notification.permission === "default") {
       // On attend 3 secondes après la connexion pour ne pas agresser l'utilisateur
-      const timer = setTimeout(() => {
-        Notification.requestPermission().then((permission) => {
-          if (permission === "granted") {
-            notificationsService.subscribePush();
-          }
-        });
-      }, 3000);
-      return () => clearTimeout(timer);
+
+      console.log("************** Notification default ********************");
+
+      console.log("************** Notification granted ********************");
+          notificationsService.subscribePush();
+      // const timer = setTimeout(() => {
+      //   Notification.requestPermission().then((permission) => {
+      //     // if (permission === "granted") {
+      //     console.log("************** Notification granted ********************");
+      //       notificationsService.subscribePush();
+      //     // }
+      //   });
+      // }, 3000);
+      // return () => clearTimeout(timer);
     }
  
     if (Notification.permission === "granted") {
       // Permission déjà accordée (reconnexion) → re-s'abonner silencieusement
       notificationsService.subscribePush();
+      console.log("************** Notification présent ********************");
     }
   }, [user]);
-  
+
   // Unauthorized handler
   useEffect(() => {
     const handler = () => { setUser(null); toast.error("Session expirée","Veuillez vous reconnecter."); };

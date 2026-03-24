@@ -1,6 +1,6 @@
 from django.urls import path, include, re_path
 from rest_framework.routers import DefaultRouter
-from .views import CommandeViewSet, PlatViewSet
+from .views import CommandeViewSet, PlatViewSet, push_subscribe
 from . import consumers
 
 router = DefaultRouter()
@@ -10,6 +10,8 @@ router.register(r'plats', PlatViewSet, basename='plat')
 
 urlpatterns = [
     path('', include(router.urls)),
+
+    path("notifications/push-subscribe/", push_subscribe, name="push-subscribe"),
 ]
     
 websocket_urlpatterns = [

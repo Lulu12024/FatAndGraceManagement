@@ -95,6 +95,10 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+VAPID_PRIVATE_KEY = os.environ.get("VAPID_PRIVATE_KEY", "")
+VAPID_PUBLIC_KEY  = os.environ.get("VAPID_PUBLIC_KEY", "")
+VAPID_CLAIMS      = {"sub": "mailto:admin@fateetgrace.com"}
+
 LANGUAGE_CODE = 'fr-fr'
 
 TIME_ZONE = 'Africa/Porto-Novo'
