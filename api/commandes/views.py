@@ -414,6 +414,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 message=f"Nouvelle commande : Table {table.numero} — {items_text}",
                 data={
                     'order_id': commande.order_id,
+                    'table_id': table.id,
                     'table_num': table.numero,
                     'items': items_text,
                     'montant': float(total),
@@ -474,7 +475,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 user=commande.serveur,
                 type='order_accepted',
                 message=f"Commande {commande.order_id} acceptée par {cuisinier.get_full_name()}",
-                data={'order_id': commande.order_id, 'table_num': commande.table.numero}
+                data={'order_id': commande.order_id, 'table_id': commande.table.id, 'table_num': commande.table.numero}
             )
 
             send_push_to_user(
@@ -520,7 +521,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 user=commande.serveur,
                 type='order_rejected',
                 message=f"Commande {commande.order_id} refusée — {motif}",
-                data={'order_id': commande.order_id, 'table_num': commande.table.numero, 'motif': motif}
+                data={'order_id': commande.order_id, 'table_id': commande.table.id, 'table_num': commande.table.numero, 'motif': motif}
             )
             send_push_to_user(
                 commande.serveur,
@@ -556,7 +557,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 user=commande.serveur,
                 type='order_ready',
                 message=f"Commande prête : Table {commande.table.numero}",
-                data={'order_id': commande.order_id, 'table_num': commande.table.numero}
+                data={'order_id': commande.order_id, 'table_id': commande.table.id, 'table_num': commande.table.numero}
             )
             send_push_to_user(
                 commande.serveur,
@@ -723,6 +724,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 message=f"Commande {commande.order_id} annulée — {motif}",
                 data={
                     'order_id': commande.order_id,
+                    'table_id': commande.table.id,
                     'table_num': commande.table.numero,
                     'motif': motif,
                 }
@@ -774,6 +776,7 @@ class OrderViewSet(viewsets.ModelViewSet):
                 message=f"Commande {commande.order_id} — Table {commande.table.numero} mise en attente",
                 data={
                     'order_id': commande.order_id,
+                    'table_id': commande.table.id,
                     'table_num': commande.table.numero,
                 }
             )

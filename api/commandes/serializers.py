@@ -227,5 +227,5 @@ class PaymentSerializer(serializers.Serializer):
 class NotificationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Notification
-        fields = ['id', 'type', 'message', 'is_read', 'created_at']
-        read_only_fields = ['id', 'type', 'message', 'created_at']
+        fields = ['id', 'type', 'message', 'is_read', 'data', 'created_at']
+        read_only_fields = ['id', 'type', 'message', 'data', 'created_at']
