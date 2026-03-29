@@ -19,8 +19,21 @@ const TYPE_META = {
 
 const getMeta = (type) => TYPE_META[type] || TYPE_META.default;
 
+/* ── Détermine si la notif est navigable et quel label afficher ── */
+const ORDER_TYPES = ["new_order","order_ready","order_accepted","order_rejected","order_cancelled","order_delivered"];
+const STOCK_TYPES = ["stock_alert","peremption_alert"];
+const MVT_TYPES   = ["mvt_validated","mvt_rejected"];
+
+const getNavHint = (type) => {
+  if (ORDER_TYPES.includes(type)) return "Voir la table →";
+  if (type === "new_order")       return "Voir en cuisine →";
+  if (STOCK_TYPES.includes(type)) return "Voir le stock →";
+  if (MVT_TYPES.includes(type))   return "Voir les mouvements →";
+  return null;
+};
+
 /* ── Composant principal ────────────────────────────────── */
-const NotificationsPanel = ({ user }) => {
+const NotificationsPanel = ({ user, onNavigate }) => {
   const [open, setOpen]       = useState(false);
   const [notifs, setNotifs]   = useState([]);
   const [loading, setLoading] = useState(false);
@@ -47,7 +60,6 @@ const NotificationsPanel = ({ user }) => {
   useEffect(() => {
     if (!user) return;
     const cleanup = notificationsService.connectWebSocket((msg) => {
-      // Ajouter la nouvelle notif en tête de liste
       if (msg.type && msg.type !== "connected") {
         const newNotif = {
           id:         Date.now(),
@@ -60,7 +72,6 @@ const NotificationsPanel = ({ user }) => {
         };
         setNotifs(prev => [newNotif, ...prev]);
       }
-      // Sync le count initial
       if (msg.type === "connected" && msg.unread_count !== undefined) {
         loadNotifs();
       }
@@ -88,6 +99,20 @@ const NotificationsPanel = ({ user }) => {
   const markAllRead = async () => {
     setNotifs(prev => prev.map(n => ({ ...n, is_read: true, read: true })));
     try { await notificationsService.markAllRead(); } catch (_) {}
+  };
+
+  /* ── Clic sur une notification → marquer lue + naviguer ── */
+  const handleNotifClick = async (notif) => {
+    // Marquer comme lue
+    if (!notif.is_read && !notif.read) {
+      await markRead(notif.id);
+    }
+    // Fermer le panel
+    setOpen(false);
+    // Déclencher la navigation si le callback existe
+    if (onNavigate) {
+      onNavigate(notif);
+    }
   };
 
   return (
@@ -121,112 +146,81 @@ const NotificationsPanel = ({ user }) => {
         )}
       </button>
 
-      {/* ── Panneau dropdown ── */}
+      {/* ── Dropdown panel ── */}
       {open && (
-        <div
-          className="anim-scaleIn"
-          style={{
-            position: "fixed",
-            top: 64, right: 16,
-            width: 360,
-            maxWidth: "calc(100vw - 32px)",
-            maxHeight: "70vh",
-            background: C.bg2,
-            border: `1px solid rgba(255,255,255,0.08)`,
-            borderRadius: 14,
-            boxShadow: "0 20px 60px rgba(0,0,0,.7)",
-            zIndex: 2000,
-            display:"flex", flexDirection:"column",
-            overflow:"hidden",
-          }}>
-
+        <div style={{
+          position: "absolute", top: 46, right: 0, zIndex: 999,
+          width: 340, maxWidth: "90vw",
+          background: C.bg2,
+          border: `1px solid rgba(255,255,255,0.08)`,
+          borderRadius: 14,
+          boxShadow: "0 8px 32px rgba(0,0,0,0.45)",
+          display:"flex", flexDirection:"column",
+          maxHeight: "80vh",
+          overflow:"hidden",
+        }}>
           {/* En-tête */}
           <div style={{
-            padding:"14px 16px", display:"flex", alignItems:"center",
-            justifyContent:"space-between",
+            padding:"14px 16px 10px",
             borderBottom:`1px solid rgba(255,255,255,0.06)`,
+            display:"flex", alignItems:"center", justifyContent:"space-between",
             flexShrink:0,
           }}>
-            <div style={{ display:"flex", alignItems:"center", gap:8 }}>
-              <span className="serif" style={{ fontSize:14, fontWeight:600, color:C.cream }}>
-                Notifications
-              </span>
-              {unreadCount > 0 && (
-                <span style={{
-                  background:C.goldFaint, border:`1px solid ${C.goldBorder}`,
-                  borderRadius:10, padding:"1px 7px", fontSize:11, color:C.goldL,
-                }}>
-                  {unreadCount} non lue{unreadCount > 1 ? "s" : ""}
-                </span>
-              )}
-            </div>
-            <div style={{ display:"flex", gap:8, alignItems:"center" }}>
-              {unreadCount > 0 && (
-                <button
-                  onClick={markAllRead}
-                  style={{
-                    background:"none", border:"none", color:C.gold,
-                    fontSize:11, cursor:"pointer", fontFamily:"'Raleway',sans-serif",
-                    padding:"3px 6px", borderRadius:6,
-                    transition:"background .15s",
-                  }}>
-                  ✓ Tout lire
-                </button>
-              )}
+            <span style={{ fontSize:13, fontWeight:600, color:C.cream, fontFamily:"'Playfair Display',serif" }}>
+              Notifications {unreadCount > 0 && <span style={{ color:C.gold }}>({unreadCount})</span>}
+            </span>
+            {unreadCount > 0 && (
               <button
-                onClick={loadNotifs}
+                onClick={markAllRead}
                 style={{
                   background:"none", border:"none", color:C.muted,
-                  fontSize:13, cursor:"pointer", padding:"3px 6px",
-                }}
-                title="Actualiser">
-                ↻
+                  fontSize:11, cursor:"pointer", fontFamily:"'Raleway',sans-serif",
+                  textDecoration:"underline",
+                }}>
+                Tout lire
               </button>
-            </div>
+            )}
           </div>
 
-          {/* Corps — liste */}
+          {/* Liste */}
           <div style={{ overflowY:"auto", flex:1 }}>
             {loading && (
-              <div style={{ padding:32, textAlign:"center", color:C.muted, fontSize:12 }}>
+              <div style={{ padding:24, textAlign:"center", color:C.muted, fontSize:12 }}>
                 Chargement…
               </div>
             )}
-
             {!loading && notifs.length === 0 && (
-              <div style={{
-                padding:40, textAlign:"center",
-                color:C.muted, fontSize:13,
-                display:"flex", flexDirection:"column", alignItems:"center", gap:10,
-              }}>
-                <span style={{ fontSize:32 }}>🔕</span>
-                <span>Aucune notification</span>
+              <div style={{ padding:24, textAlign:"center", color:C.muted, fontSize:12 }}>
+                Aucune nouvelle notification
               </div>
             )}
+            {notifs.map(notif => {
+              const meta   = getMeta(notif.type);
+              const isRead = notif.is_read || notif.read;
+              const navHint = getNavHint(notif.type);
 
-            {!loading && notifs.map((notif) => {
-              const meta    = getMeta(notif.type);
-              const isRead  = notif.is_read || notif.read;
               return (
                 <div
                   key={notif.id}
-                  onClick={() => !isRead && markRead(notif.id)}
+                  onClick={() => handleNotifClick(notif)}
                   style={{
-                    padding:"12px 16px",
+                    padding:"11px 16px",
                     borderBottom:`1px solid rgba(255,255,255,0.04)`,
-                    background: isRead ? "transparent" : `${meta.color}08`,
-                    cursor: isRead ? "default" : "pointer",
-                    display:"flex", gap:12, alignItems:"flex-start",
+                    display:"flex", gap:10, alignItems:"flex-start",
+                    background: isRead ? "transparent" : "rgba(255,255,255,0.02)",
+                    cursor: "pointer",
                     transition:"background .15s",
-                  }}>
-
-                  {/* Icône */}
+                  }}
+                  onMouseEnter={e => e.currentTarget.style.background = "rgba(255,255,255,0.05)"}
+                  onMouseLeave={e => e.currentTarget.style.background = isRead ? "transparent" : "rgba(255,255,255,0.02)"}
+                >
+                  {/* Icône type */}
                   <div style={{
-                    width:34, height:34, borderRadius:10, flexShrink:0,
+                    width:32, height:32, borderRadius:8, flexShrink:0,
                     background:`${meta.color}18`,
                     border:`1px solid ${meta.color}30`,
                     display:"flex", alignItems:"center", justifyContent:"center",
-                    fontSize:15,
+                    fontSize:14, marginTop:1,
                   }}>
                     {meta.icon}
                   </div>
@@ -234,7 +228,8 @@ const NotificationsPanel = ({ user }) => {
                   {/* Contenu */}
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{
-                      fontSize:12, fontWeight: isRead ? 400 : 600,
+                      fontSize:12,
+                      fontWeight: isRead ? 400 : 600,
                       color: isRead ? C.mutedL : C.cream,
                       lineHeight:1.4,
                       overflow:"hidden", textOverflow:"ellipsis",
@@ -242,8 +237,23 @@ const NotificationsPanel = ({ user }) => {
                     }}>
                       {notif.message || notif.contenu || meta.label}
                     </div>
-                    <div style={{ fontSize:10, color:C.muted, marginTop:4 }}>
-                      {timeAgo(notif.created_at || notif.date)}
+                    <div style={{ display:"flex", alignItems:"center", justifyContent:"space-between", marginTop:4, gap:6 }}>
+                      <span style={{ fontSize:10, color:C.muted }}>
+                        {timeAgo(notif.created_at || notif.date)}
+                      </span>
+                      {/* Lien d'action affiché en hover-like */}
+                      {navHint && (
+                        <span style={{
+                          fontSize:10,
+                          color: meta.color,
+                          fontWeight:600,
+                          fontFamily:"'Raleway',sans-serif",
+                          opacity:0.85,
+                          whiteSpace:"nowrap",
+                        }}>
+                          {navHint}
+                        </span>
+                      )}
                     </div>
                   </div>
 
@@ -251,7 +261,7 @@ const NotificationsPanel = ({ user }) => {
                   {!isRead && (
                     <div style={{
                       width:7, height:7, borderRadius:"50%",
-                      background:meta.color, flexShrink:0, marginTop:4,
+                      background:meta.color, flexShrink:0, marginTop:6,
                     }}/>
                   )}
                 </div>
@@ -259,7 +269,7 @@ const NotificationsPanel = ({ user }) => {
             })}
           </div>
 
-          {/* Pied — lien vers toutes les notifs */}
+          {/* Pied */}
           {notifs.length > 0 && (
             <div style={{
               padding:"10px 16px",
