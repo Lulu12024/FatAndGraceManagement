@@ -15,6 +15,11 @@ const TYPE_META = {
   mvt_validated:     { icon:"✓",   color:C.success, label:"Mouvement validé"    },
   mvt_rejected:      { icon:"✕",   color:C.danger,  label:"Mouvement rejeté"    },
   default:           { icon:"🔔",  color:C.mutedL,  label:"Notification"        },
+  demande_stock:     { icon:"📦", color:C.info,    label:"Demande de stock"  },
+  demande_validee:   { icon:"✅", color:C.success, label:"Demande validée"   },
+  demande_rejetee:   { icon:"❌", color:C.danger,  label:"Demande rejetée"   },
+  table_closed:      { icon:"🔒", color:C.gold,    label:"Table clôturée"        },
+  order_to_pay:      { icon:"💰", color:C.gold,    label:"Commande à encaisser"  },
 };
 
 const getMeta = (type) => TYPE_META[type] || TYPE_META.default;

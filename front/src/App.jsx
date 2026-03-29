@@ -230,7 +230,10 @@ export default function App() {
       handleNav("stock-history");
       return;
     }
-  
+    
+    if (type === "demande_stock")   { handleNav("demandes"); return; }
+    if (type === "demande_validee") { handleNav("stock-request"); return; }
+    if (type === "demande_rejetee") { handleNav("stock-request"); return; }
     // ── Fallback : tableau de bord ──
     handleNav("dashboard");
   };

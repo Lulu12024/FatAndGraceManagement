@@ -281,6 +281,13 @@ class Notification(models.Model):
         ('peremption_alert', 'Alerte péremption'),
         ('mvt_validated', 'Mouvement validé'),
         ('mvt_rejected', 'Mouvement rejeté'),
+
+        ('demande_stock',    'Demande de stock'), 
+        ('demande_validee',  'Demande validée'),  
+        ('demande_rejetee',  'Demande rejetée'), 
+        ('table_closed',     'Table clôturée'),      
+        ('order_delivered',  'Commande livrée'),
+        
     ]
 
     user = models.ForeignKey(

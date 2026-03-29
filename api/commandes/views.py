@@ -11,7 +11,7 @@ from decimal import Decimal
 from rest_framework.decorators import action, api_view, permission_classes
 import io
 from .push_utils import send_push_to_role, send_push_to_user
-
+from users.models import User
 from .models import Commande, Plat, CommandePlat, Table, Facture, Notification
 from .serializers import (
     TableSerializer, TableDetailSerializer,
@@ -132,6 +132,21 @@ class TableViewSet(viewsets.ModelViewSet):
         table.date_cloture = timezone.now()
         table.save()
 
+        gerants = User.objects.filter(
+            role__nom__in=['Gérant', 'Manager', 'Administrateur'],
+            is_activite=True
+        )
+        for gerant in gerants:
+            Notification.objects.create(
+                user=gerant,
+                type='table_closed',
+                message=f"Table {table.numero} clôturée — {total} FCFA à encaisser",
+                data={
+                    'table_id': table.id,
+                    'table_num': table.numero,
+                    'montant': float(total),
+                }
+            )
         log_action(
             user=request.user, action='UPDATE',
             type_action='Clôture table',
@@ -589,6 +604,22 @@ class OrderViewSet(viewsets.ModelViewSet):
             table_name='commande', record_id=commande.id, request=request
         )
 
+        gerants = User.objects.filter(
+            role__nom__in=['Gérant', 'Manager', 'Administrateur'],
+            is_activite=True
+        )
+        for gerant in gerants:
+            Notification.objects.create(
+                user=gerant,
+                type='order_delivered',
+                message=f"Commande {commande.order_id} livrée — Table {commande.table.numero} prête pour paiement",
+                data={
+                    'table_id': commande.table.id,
+                    'table_num': commande.table.numero,
+                    'order_id': commande.order_id,
+                    'montant': float(commande.prix_total),
+                }
+            )
         return Response(OrderSerializer(commande).data)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsGerantOrAdmin])
