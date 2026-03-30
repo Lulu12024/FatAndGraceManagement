@@ -127,9 +127,12 @@ export const auditService = {
         Object.fromEntries(Object.entries(params).filter(([, v]) => v))
       ).toString();
       const data = await api.get(`/audit-logs/${qs ? "?" + qs : ""}`);
-      return unwrap(data);
+      // Retourner la réponse paginée complète { count, next, previous, results }
+      if (data && Array.isArray(data.results)) return data;
+      // Fallback si pas de pagination
+      return { count: Array.isArray(data) ? data.length : 0, next: null, previous: null, results: Array.isArray(data) ? data : [] };
     } catch (err) {
-      if (err.isNetwork) return [...MOCK_AUDIT];
+      if (err.isNetwork) return { count: MOCK_AUDIT.length, next: null, previous: null, results: [...MOCK_AUDIT] };
       throw err;
     }
   },
