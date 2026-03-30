@@ -162,6 +162,11 @@ class UserViewSet(viewsets.ModelViewSet):
         if hasattr(User, 'is_deleted'):
             qs = qs.filter(is_deleted=False)
 
+        # Le Manager ne peut pas voir les Administrateurs
+        role_nom = self.request.user.role.nom if self.request.user.role else ''
+        if role_nom == 'Manager':
+            qs = qs.exclude(role__nom='Administrateur')
+
         # Filters
         role = self.request.query_params.get('role')
         if role:

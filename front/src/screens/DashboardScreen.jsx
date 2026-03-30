@@ -37,7 +37,7 @@ const DashboardScreen = ({ role, tables, orders, products, movements, toast }) =
         )}
       </div>
 
-      <div style={{ display:"grid", gridTemplateColumns:"1.2fr 1fr", gap:18 }}>
+      <div style={{ display:"grid", gridTemplateColumns:["gestionnaire","gérant","manager","admin"].includes(role) ? "1.2fr 1fr" : "1fr", gap:18 }}>
         {/* Recent orders */}
         <Card style={{ overflow:"hidden" }}>
           <div style={{ padding:"15px 20px", borderBottom:`1px solid rgba(255,255,255,0.05)`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
@@ -67,34 +67,36 @@ const DashboardScreen = ({ role, tables, orders, products, movements, toast }) =
         </Card>
 
         {/* Stock alerts */}
-        <Card style={{ overflow:"hidden" }}>
-          <div style={{ padding:"15px 20px", borderBottom:`1px solid rgba(255,255,255,0.05)`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-            <span className="serif" style={{ fontSize:15, color:C.cream }}>Alertes stock</span>
-            {stockAlerte > 0 && <Badge color={C.danger}>{stockAlerte} alertes</Badge>}
-          </div>
-          <div style={{ maxHeight:296, overflowY:"auto" }}>
-            {(() => {
-              const alerts = products.filter(p => p.qte < p.seuil || new Date(p.peremption) < new Date(Date.now()+4*86400000));
-              if (!alerts.length) return <div style={{ padding:"40px 20px", textAlign:"center", color:C.success, fontSize:13 }}>✓ Stock en bonne santé</div>;
-              return alerts.map(p => {
-                const low = p.qte < p.seuil;
-                const exp = new Date(p.peremption) < new Date(Date.now()+4*86400000);
-                return (
-                  <div key={p.id} style={{ padding:"11px 20px", borderBottom:`1px solid rgba(255,255,255,0.04)`,
-                    display:"flex", justifyContent:"space-between", alignItems:"center" }}>
-                    <div>
-                      <div style={{ fontSize:13, fontWeight:600, color:C.cream }}>{p.nom}</div>
-                      <div style={{ fontSize:11, marginTop:2, color:exp?C.danger:C.warning }}>
-                        {exp && "⏰ Péremption proche"}{exp&&low&&" · "}{low && `${p.qte}${p.unite} (seuil: ${p.seuil})`}
+        {["gestionnaire","gérant","manager","admin"].includes(role) && (
+          <Card style={{ overflow:"hidden" }}>
+            <div style={{ padding:"15px 20px", borderBottom:`1px solid rgba(255,255,255,0.05)`, display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+              <span className="serif" style={{ fontSize:15, color:C.cream }}>Alertes stock</span>
+              {stockAlerte > 0 && <Badge color={C.danger}>{stockAlerte} alertes</Badge>}
+            </div>
+            <div style={{ maxHeight:296, overflowY:"auto" }}>
+              {(() => {
+                const alerts = products.filter(p => p.qte < p.seuil || new Date(p.peremption) < new Date(Date.now()+4*86400000));
+                if (!alerts.length) return <div style={{ padding:"40px 20px", textAlign:"center", color:C.success, fontSize:13 }}>✓ Stock en bonne santé</div>;
+                return alerts.map(p => {
+                  const low = p.qte < p.seuil;
+                  const exp = new Date(p.peremption) < new Date(Date.now()+4*86400000);
+                  return (
+                    <div key={p.id} style={{ padding:"11px 20px", borderBottom:`1px solid rgba(255,255,255,0.04)`,
+                      display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                      <div>
+                        <div style={{ fontSize:13, fontWeight:600, color:C.cream }}>{p.nom}</div>
+                        <div style={{ fontSize:11, marginTop:2, color:exp?C.danger:C.warning }}>
+                          {exp && "⏰ Péremption proche"}{exp&&low&&" · "}{low && `${p.qte}${p.unite} (seuil: ${p.seuil})`}
+                        </div>
                       </div>
+                      <Badge color={low?C.danger:C.warning}>{low?"Critique":"Attention"}</Badge>
                     </div>
-                    <Badge color={low?C.danger:C.warning}>{low?"Critique":"Attention"}</Badge>
-                  </div>
-                );
-              });
-            })()}
-          </div>
-        </Card>
+                  );
+                });
+              })()}
+            </div>
+          </Card>
+        )}
       </div>
 
       {/* Tables mini-map */}

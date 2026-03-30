@@ -108,16 +108,13 @@ const NotificationsPanel = ({ user, onNavigate }) => {
 
   /* ── Clic sur une notification → marquer lue + naviguer ── */
   const handleNotifClick = async (notif) => {
-    // Marquer comme lue
-    if (!notif.is_read && !notif.read) {
-      await markRead(notif.id);
-    }
-    // Fermer le panel
+    // Supprimer immédiatement de la liste (disparition visuelle)
+    setNotifs(prev => prev.filter(n => n.id !== notif.id));
+    // Marquer comme lue en arrière-plan
+    try { await notificationsService.markRead(notif.id); } catch (_) {}
+    // Fermer le panel et naviguer
     setOpen(false);
-    // Déclencher la navigation si le callback existe
-    if (onNavigate) {
-      onNavigate(notif);
-    }
+    if (onNavigate) onNavigate(notif);
   };
 
   return (
@@ -282,7 +279,7 @@ const NotificationsPanel = ({ user, onNavigate }) => {
               textAlign:"center", flexShrink:0,
             }}>
               <button
-                onClick={() => { markAllRead(); setOpen(false); }}
+                onClick={() => { setNotifs([]); notificationsService.markAllRead().catch(()=>{}); setOpen(false); }}
                 style={{
                   background:"none", border:"none", color:C.muted,
                   fontSize:11, cursor:"pointer", fontFamily:"'Raleway',sans-serif",
