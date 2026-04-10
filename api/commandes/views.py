@@ -876,7 +876,7 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
             import os
             from django.conf import settings
 
-            logo_path = os.path.join(settings.BASE_DIR, 'stock_management', 'static', 'logo.jpg')
+            logo_path = os.path.join(settings.BASE_DIR, 'stock_management', 'static', 'logo1.png')
 
             # ── Dimensions ──────────────────────────────────────
             TICKET_WIDTH = 80 * mm
@@ -929,7 +929,7 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
 
             # ── EN-TÊTE ─────────────────────────────────────────
             center("FATE AND GRACE", size=10, bold=True)
-            center("Pâtisserie · Restaurant", size=6)
+            center("BOulangerie · Pâtisserie · Restaurant", size=6)
             gap()
             sep()
             center("IFU N° 0202327061497", size=6)
