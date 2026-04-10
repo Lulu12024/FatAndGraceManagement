@@ -63,4 +63,10 @@ export const platsService = {
       throw err;
     }
   },
+
+  create: async (payload) => {
+    const res = await api.post("/plats/", payload);
+    return res.data;
+  },
+
 };

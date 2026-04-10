@@ -56,6 +56,7 @@ export const productsService = {
       throw err;
     }
   },
+  
 
   async update(id, payload) {
     try {
@@ -86,6 +87,11 @@ export const productsService = {
       }
       throw err;
     }
+  },
+
+  createProduit: async (payload) => {
+    const res = await api.post("/stocks/produits/", payload);
+    return res.data;
   },
 };
 
@@ -188,4 +194,6 @@ export const demandesService = {
   async reject(id, motif) {
     return await api.post(`/demandes/${id}/reject/`, { motif });
   },
+
+  
 };

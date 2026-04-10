@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { C } from "../styles/tokens";
 import NotificationsPanel from "./NotificationsPanel";
 
-const Header = ({ title, subtitle, actions, onMenuToggle, user }) => {
+const Header = ({ title, subtitle, actions, onMenuToggle, user, onNavigate }) => {
   const [isMobile, setIsMobile] = useState(window.innerWidth < 768);
 
   useEffect(() => {
@@ -62,7 +62,7 @@ const Header = ({ title, subtitle, actions, onMenuToggle, user }) => {
       {/* Droite : actions + notifications */}
       <div style={{ display: "flex", alignItems: "center", gap: isMobile ? 8 : 12, flexShrink: 0 }}>
         {actions}
-        <NotificationsPanel user={user} />
+        <NotificationsPanel user={user} onNavigate={onNavigate} />
       </div>
     </div>
   );

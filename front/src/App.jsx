@@ -38,6 +38,8 @@ import StatsScreen from "./screens/StatsScreen";
 import PlatsScreen from "./screens/PlatsScreen";
 import DemandesScreen from "./screens/DemandesScreen";
 import { getUser } from "./api/client"; 
+import ImportScreen from "./screens/ImportScreen";
+
 export default function App() {
   useEffect(() => { injectGlobalCSS(); }, []);
 
@@ -163,6 +165,79 @@ export default function App() {
       .catch(() => {});
   };
 
+  
+  const handleNotifNavigate = (notif) => {
+    const type = notif.type;
+    const data = notif.data || {};
+  
+    // ── Notifications liées aux commandes/tables ──
+    const ORDER_TYPES = [
+      "new_order", "order_ready", "order_accepted",
+      "order_rejected", "order_cancelled", "order_delivered",
+    ];
+  
+    if (ORDER_TYPES.includes(type)) {
+      // Cuisinier : "new_order" → aller en cuisine
+      const role = (user?.role || "").toLowerCase();
+      const isCuisinier = role.includes("cuisinier");
+  
+      if (type === "new_order" && isCuisinier) {
+        handleNav("kitchen");
+        return;
+      }
+  
+      // Pour tout le reste (serveur, gérant…) → ouvrir la page de détail de la table
+      const tableId  = data.table_id;
+      const tableNum = data.table_num;
+  
+      // Chercher dans les tables déjà chargées
+      let found = null;
+      if (tableId) {
+        found = tables.find(t => t.id === tableId);
+      }
+      if (!found && tableNum) {
+        found = tables.find(t =>
+          String(t.numero).trim().toLowerCase() === String(tableNum).trim().toLowerCase()
+        );
+      }
+  
+      if (found) {
+        // Table trouvée en mémoire → navigation directe
+        handleSelTable(found);
+      } else if (tableId) {
+        // Pas en mémoire → fetch depuis l'API puis naviguer
+        tablesService.get(tableId)
+          .then(t => {
+            if (t) handleSelTable(t);
+            else   handleNav("tables"); // fallback
+          })
+          .catch(() => handleNav("tables"));
+      } else {
+        // Aucune info de table → aller à la liste des tables
+        handleNav("tables");
+      }
+      return;
+    }
+  
+    // ── Notifications stock ──
+    if (type === "stock_alert" || type === "peremption_alert") {
+      handleNav("stock");
+      return;
+    }
+  
+    // ── Notifications mouvements ──
+    if (type === "mvt_validated" || type === "mvt_rejected") {
+      handleNav("stock-history");
+      return;
+    }
+    
+    if (type === "demande_stock")   { handleNav("demandes"); return; }
+    if (type === "demande_validee") { handleNav("stock-request"); return; }
+    if (type === "demande_rejetee") { handleNav("stock-request"); return; }
+    // ── Fallback : tableau de bord ──
+    handleNav("dashboard");
+  };
+  
   if (!user) return (
     <>
       <LoginScreen onLogin={handleLogin} toast={toast}/>
@@ -223,6 +298,7 @@ export default function App() {
       case "stats":          return <StatsScreen {...sharedProps} orders={orders}/>;
       case "demandes":       return <DemandesScreen {...sharedProps}/>;
       case "menu":           return <PlatsScreen role={role} toast={toast} plats={plats} setPlats={setPlats}/>;
+      case "import":         return <ImportScreen {...sharedProps}  setProducts={setProducts} setMovements={setMovements} setPlats={setPlats}/>;
       default:               return <DashboardScreen {...sharedProps} tables={tables} orders={orders} products={products} movements={movements}/>;
     }
   };
@@ -246,7 +322,8 @@ export default function App() {
               ? `${TABLE_STATUS[selTable.status]?.label || ""} · ${selTable.capacite} couverts`
               : new Date().toLocaleDateString("fr-FR", { weekday:"long", day:"numeric", month:"long", year:"numeric" })
           }
-          user={user}                                         // ← NOUVEAU : pour les notifications
+          user={user}    
+          onNavigate={handleNotifNavigate}                                      // ← NOUVEAU : pour les notifications
           onMenuToggle={() => setSidebarOpen(o => !o)}
           actions={
             screen === "table-detail" && (

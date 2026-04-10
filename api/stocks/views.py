@@ -9,7 +9,7 @@ from django.db.models import Q
 from django.utils import timezone
 from decimal import Decimal
 import unicodedata
-
+from commandes.models import Notification
 from .models import (
     Produit, Unite, Stock, MouvementStock, DemandeProduit,
     TypeMouvement, StatutMouvement,
@@ -396,7 +396,26 @@ class DemandeProduitViewSet(viewsets.ModelViewSet):
         return DemandeProduit.objects.none()
 
     def perform_create(self, serializer):
-        serializer.save(demandeur=self.request.user)
+        demande = serializer.save(demandeur=self.request.user)
+
+        # Notifier tous les gestionnaires de stock actifs
+        from commandes.models import Notification
+        from users.models import User
+        gestionnaires = User.objects.filter(
+            role__nom__in=['Gestionnaire de stock', 'Gérant', 'Manager', 'Administrateur'],
+            is_activite=True
+        )
+        for g in gestionnaires:
+            Notification.objects.create(
+                user=g,
+                type='demande_stock',
+                message=f"Nouvelle demande de stock : {demande.produit.nom} × {demande.quantite} — {demande.demandeur.get_full_name()}",
+                data={
+                    'demande_id': demande.id,
+                    'produit_nom': demande.produit.nom,
+                    'qte': float(demande.quantite),
+                }
+            )
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsGestionnaireOrGerantOrAdmin])
     def validate(self, request, pk=None):
@@ -443,6 +462,16 @@ class DemandeProduitViewSet(viewsets.ModelViewSet):
             table_name='demande_produit', record_id=demande.id, request=request
         )
 
+        Notification.objects.create(
+            user=demande.demandeur,
+            type='demande_validee',
+            message=f"Votre demande de {demande.produit.nom} × {demande.quantite} a été validée par {request.user.get_full_name()}",
+            data={
+                'demande_id': demande.id,
+                'produit_nom': demande.produit.nom,
+                'qte': float(demande.quantite),
+            }
+        )
         return Response(DemandeProduitSerializer(demande).data)
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsGestionnaireOrGerantOrAdmin])
@@ -466,6 +495,18 @@ class DemandeProduitViewSet(viewsets.ModelViewSet):
             type_action='Rejet demande produit',
             description=f"Demande #{demande.id} rejetée — {demande.produit.nom}" + (f" — Motif: {motif}" if motif else ""),
             table_name='demande_produit', record_id=demande.id, request=request
+        )
+
+        Notification.objects.create(
+            user=demande.demandeur,
+            type='demande_rejetee',
+            message=f"Votre demande de {demande.produit.nom} × {demande.quantite} a été rejetée" + (f" — {motif}" if motif else ""),
+            data={
+                'demande_id': demande.id,
+                'produit_nom': demande.produit.nom,
+                'qte': float(demande.quantite),
+                'motif': motif,
+            }
         )
 
         return Response(DemandeProduitSerializer(demande).data)

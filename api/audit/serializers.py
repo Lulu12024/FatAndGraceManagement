@@ -7,13 +7,14 @@ class AuditLogSerializer(serializers.ModelSerializer):
     user_id = serializers.IntegerField(source='user.id', read_only=True)
     date = serializers.DateField(source='date_action', read_only=True)
     heure = serializers.TimeField(source='heure_action', read_only=True)
+    details = serializers.CharField(source='description', read_only=True)
     timestamp = serializers.SerializerMethodField()
 
     class Meta:
         model = LogAudit
         fields = [
             'id', 'user', 'user_id', 'action', 'type_action',
-            'date', 'heure', 'timestamp', 'description',
+            'date', 'heure', 'timestamp', 'details', 'description',
             'ip_address', 'table_name', 'record_id',
             'old_values', 'new_values'
         ]

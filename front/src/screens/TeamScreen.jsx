@@ -23,6 +23,30 @@ const TeamScreen = ({ role, toast }) => {
 
   const isAdmin = ["admin", "administrateur", "manager"].includes(role);
 
+  const ROLE_ORDER = [
+  "Serveur",
+  "Cuisinier",
+  "Gestionnaire de stock",
+  "Gérant",
+  "Manager",
+  "Auditeur",
+  "Administrateur",
+];
+
+// Le manager ne voit pas les admins (double sécurité côté front)
+const visibleUsers = (users || []).filter(u => {
+  const userRole = u.role?.nom ?? u.role ?? "";
+  if (role === "manager" && userRole === "Administrateur") return false;
+  return true;
+});
+
+// Grouper par rôle dans l'ordre défini
+const groupedUsers = ROLE_ORDER.reduce((acc, roleName) => {
+  const group = visibleUsers.filter(u => (u.role?.nom ?? u.role) === roleName);
+  if (group.length > 0) acc.push({ roleName, users: group });
+  return acc;
+}, []);
+
   useEffect(() => {
     setLoading(true);
     Promise.all([
@@ -108,35 +132,68 @@ const TeamScreen = ({ role, toast }) => {
       ) : !users?.length ? (
         <Empty icon="👥" text="Aucun utilisateur trouvé" />
       ) : (
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 12 }}>
-          {users.map((u, i) => {
-            const color = ROLE_COLORS[u.role?.nom ?? u.role] || C.gold;
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 32 }}>
+          {groupedUsers.map(({ roleName, users: groupUsers }) => {
+            const groupColor = ROLE_COLORS[roleName] || C.gold;
             return (
-              <Card key={u.id} className="anim-fadeUp" style={{ padding: 18, animationDelay: `${i * 35}ms` }}>
-                <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
-                  <div style={{ width: 46, height: 46, borderRadius: 12, background: `${color}22`, border: `1px solid ${color}45`,
-                    display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color, flexShrink: 0 }}>
-                    {u.first_name?.[0]}{u.last_name?.[0]}
-                  </div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: 14, fontWeight: 600, color: C.cream }} className="truncate">{u.first_name} {u.last_name}</div>
-                    <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{u.login}</div>
-                    <div style={{ marginTop: 5 }}><Badge color={color}>{u.role?.nom ?? u.role}</Badge></div>
-                  </div>
-                  <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
-                    <Dot color={u.is_activite ? C.success : C.danger} />
-                    {isAdmin && (
-                      <div style={{ display: "flex", gap: 8 }}>
-                        <button onClick={() => openEdit(u)} style={{ background: "none", border: "none", color: C.gold, fontSize: 11, cursor: "pointer" }} title="Modifier">✏️</button>
-                        <button onClick={() => toggleUser(u.id)} style={{ background: "none", border: "none", color: C.muted, fontSize: 11, cursor: "pointer" }} className="hover-gold">
-                          {u.is_activite ? "Désactiver" : "Activer"}
-                        </button>
-                      </div>
-                    )}
-                  </div>
+              <div key={roleName}>
+                {/* En-tête de groupe */}
+                <div style={{
+                  display: "flex", alignItems: "center", gap: 10, marginBottom: 14,
+                }}>
+                  <div style={{
+                    height: 1, flex: 1,
+                    background: `linear-gradient(to right, ${groupColor}40, transparent)`,
+                  }}/>
+                  <span style={{
+                    fontSize: 11, fontWeight: 700, letterSpacing: 1.5,
+                    color: groupColor, textTransform: "uppercase",
+                    fontFamily: "'Raleway',sans-serif",
+                    background: `${groupColor}15`,
+                    border: `1px solid ${groupColor}30`,
+                    borderRadius: 20, padding: "3px 12px",
+                  }}>
+                    {roleName} ({groupUsers.length})
+                  </span>
+                  <div style={{
+                    height: 1, flex: 1,
+                    background: `linear-gradient(to left, ${groupColor}40, transparent)`,
+                  }}/>
                 </div>
-              </Card>
-            );
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill,minmax(280px,1fr))", gap: 12 }}>
+                  {groupUsers.map((u, i) => {
+                    const color = ROLE_COLORS[u.role?.nom ?? u.role] || C.gold;
+                    return (
+                      <Card key={u.id} className="anim-fadeUp" style={{ padding: 18, animationDelay: `${i * 35}ms` }}>
+                        <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+                          <div style={{ width: 46, height: 46, borderRadius: 12, background: `${color}22`, border: `1px solid ${color}45`,
+                            display: "flex", alignItems: "center", justifyContent: "center", fontSize: 15, fontWeight: 700, color, flexShrink: 0 }}>
+                            {u.first_name?.[0]}{u.last_name?.[0]}
+                          </div>
+                          <div style={{ flex: 1, minWidth: 0 }}>
+                            <div style={{ fontSize: 14, fontWeight: 600, color: C.cream }} className="truncate">{u.first_name} {u.last_name}</div>
+                            <div style={{ fontSize: 11, color: C.muted, marginTop: 2 }}>{u.login}</div>
+                            <div style={{ marginTop: 5 }}><Badge color={color}>{u.role?.nom ?? u.role}</Badge></div>
+                          </div>
+                          <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6 }}>
+                            <Dot color={u.is_activite ? C.success : C.danger} />
+                            {isAdmin && (
+                              <div style={{ display: "flex", gap: 8 }}>
+                                <button onClick={() => openEdit(u)} style={{ background: "none", border: "none", color: C.gold, fontSize: 11, cursor: "pointer" }} title="Modifier">✏️</button>
+                                <button onClick={() => toggleUser(u.id)} style={{ background: "none", border: "none", color: C.muted, fontSize: 11, cursor: "pointer" }} className="hover-gold">
+                                  {u.is_activite ? "Désactiver" : "Activer"}
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </Card>
+                    );
+                  })}
+                </div>
+              </div>
+              );
           })}
         </div>
       )}

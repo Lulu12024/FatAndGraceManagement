@@ -72,7 +72,7 @@ const LoginScreen = ({ onLogin, toast }) => {
         </Card>
 
         <p style={{ textAlign:"center", fontSize:10, color:C.mutedD, marginTop:20, letterSpacing:.8 }}>
-          FATE & GRÂCE · DSI Africa Global Logistics Bénin · v1.0 · 2025
+          FATE & GRÂCE · v1.0 · 2026 &copy; Tous droits réservés
         </p>
       </div>
     </div>
