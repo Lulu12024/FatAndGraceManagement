@@ -6,7 +6,7 @@
  * GET    /api/invoices/{id}/pdf/    → PDF (download)
  * POST   /api/invoices/{id}/reprint/ → 200
  */
-import { api, downloadFile, unwrap } from "./client";
+import { api, downloadFile, unwrap,  BASE_URL, getToken  } from "./client";
 import { MOCK_INVOICES } from "../mock";
 import { MOCK_USERS } from "../mock";   // ← déplacer depuis ligne ~55
 import { MOCK_AUDIT } from "../mock";  
@@ -41,6 +41,26 @@ export const invoicesService = {
       if (err.isNetwork) throw new Error("PDF indisponible en mode hors-ligne.");
       throw err;
     }
+  },
+  async printTicket(id) {
+    const response = await fetch(`${BASE_URL}/invoices/${id}/pdf/`, {
+      headers: { Authorization: `Bearer ${getToken()}` }
+    });
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+
+    // Ouvre dans un iframe invisible → dialogue impression auto
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = url;
+    document.body.appendChild(iframe);
+    iframe.onload = () => {
+      iframe.contentWindow.print();
+      setTimeout(() => {
+        document.body.removeChild(iframe);
+        URL.revokeObjectURL(url);
+      }, 2000);
+    };
   },
 };
 

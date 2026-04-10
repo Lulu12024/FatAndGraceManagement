@@ -25,6 +25,13 @@ const InvoicesScreen = ({ toast }) => {
     try { await invoicesService.downloadPdf(inv.num_id, `facture-${inv.id}.pdf`); }
     catch (err) { toast.warning("PDF", err.message); }
   };
+  const printTicket = async (inv) => {
+    try {
+      await invoicesService.printTicket(inv.num_id);
+    } catch (err) {
+      toast.warning("Impression", err.message);
+    }
+  };
 
   return (
     <div style={{ padding: 28, overflowY: "auto", flex: 1 }}>
@@ -70,7 +77,7 @@ const InvoicesScreen = ({ toast }) => {
                   </div>
                   <div style={{ display: "flex", gap: 6, marginTop: 10, justifyContent: "flex-end" }}>
                     <Btn small variant="ghost" onClick={() => dlPDF(inv)}>PDF ↓</Btn>
-                    {/* <Btn small variant="outline">Réimprimer</Btn> */}
+                    <Btn small variant="outline" onClick={() => printTicket(inv)}>Imprimer</Btn>
                   </div>
                 </div>
               </div>
