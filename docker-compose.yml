@@ -1,0 +1,116 @@
+services:
+
+  db:
+    image: postgres:15-alpine
+    container_name: fategrace_db
+    restart: always
+    environment:
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - fategrace_net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ─────────────────────────────────────────
+  # Backend Django 
+  # ─────────────────────────────────────────
+  backend:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: fategrace_backend
+    restart: always
+    command: sh -c "python manage.py migrate && python init_data.py && gunicorn stock_management.wsgi:application --bind 0.0.0.0:8000 --workers 4 --timeout 120"
+    env_file:
+      - .env
+    volumes:
+      - static_files:/app/staticfiles
+      - media_files:/app/media
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - fategrace_net
+
+  # ─────────────────────────────────────────
+  # Backend Django — WebSocket 
+  # ─────────────────────────────────────────
+  daphne:
+    build:
+      context: ./api
+      dockerfile: Dockerfile
+    container_name: fategrace_daphne
+    restart: always
+    command: daphne -b 0.0.0.0 -p 8001 stock_management.asgi:application
+    env_file:
+      - .env
+    environment:
+      DB_HOST: db
+      REDIS_HOST: redis
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - fategrace_net
+
+  # ─────────────────────────────────────────
+  # Frontend React 
+  # ─────────────────────────────────────────
+  frontend:
+    build:
+      context: ./front
+      dockerfile: Dockerfile
+    container_name: fategrace_frontend
+  
+    volumes:
+      - frontend_build:/app/build
+    networks:
+      - fategrace_net
+
+  # ─────────────────────────────────────────
+  # Nginx — Reverse proxy + fichiers statiques
+  # ─────────────────────────────────────────
+  nginx:
+    image: nginx:alpine
+    container_name: fategrace_nginx
+    restart: always
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      - frontend_build:/usr/share/nginx/html:ro
+      - static_files:/usr/share/nginx/django_static:ro
+      - media_files:/usr/share/nginx/media:ro
+    depends_on:
+      - backend
+      - daphne
+      - frontend
+    networks:
+      - fategrace_net
+
+# ─────────────────────────────────────────
+# Volumes persistants
+# ─────────────────────────────────────────
+volumes:
+  postgres_data:
+  static_files:
+  media_files:
+  frontend_build:
+
+# ─────────────────────────────────────────
+# Réseau interne
+# ─────────────────────────────────────────
+networks:
+  fategrace_net:
+    driver: bridge
