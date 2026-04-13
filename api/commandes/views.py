@@ -929,7 +929,7 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
 
             # ── EN-TÊTE ─────────────────────────────────────────
             center("FATE AND GRACE", size=10, bold=True)
-            center("BOulangerie · Pâtisserie · Restaurant", size=6)
+            center("Boulangerie · Pâtisserie · Restaurant", size=6)
             gap()
             sep()
             center("IFU N° 0202327061497", size=6)
@@ -938,7 +938,7 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
             gap(0.3)
 
             # ── INFOS TICKET ────────────────────────────────────
-            center("REÇU DE VENTE", size=8, bold=True)
+            center("TICKET DE COMMANDE", size=8, bold=True)
             gap(0.3)
             row("Ticket :", facture.numero_facture, size=7)
             row("Table  :", facture.table.numero, size=7)
