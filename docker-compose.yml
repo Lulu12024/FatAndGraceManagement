@@ -1,10 +1,5 @@
-# version: "3.9"
-
 services:
 
-  # ─────────────────────────────────────────
-  # 🗄️  Base de données PostgreSQL
-  # ─────────────────────────────────────────
   db:
     image: postgres:15-alpine
     container_name: fategrace_db
@@ -24,22 +19,7 @@ services:
       retries: 5
 
   # ─────────────────────────────────────────
-  # ⚡ Redis (WebSocket + Celery)
-  # ─────────────────────────────────────────
-  redis:
-    image: redis:7-alpine
-    container_name: fategrace_redis
-    restart: always
-    networks:
-      - fategrace_net
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # ─────────────────────────────────────────
-  # 🐍 Backend Django — API REST (Gunicorn)
+  # Backend Django 
   # ─────────────────────────────────────────
   backend:
     build:
@@ -62,7 +42,7 @@ services:
       - fategrace_net
 
   # ─────────────────────────────────────────
-  # 🔌 Backend Django — WebSocket (Daphne)
+  # Backend Django — WebSocket 
   # ─────────────────────────────────────────
   daphne:
     build:
@@ -85,45 +65,21 @@ services:
       - fategrace_net
 
   # ─────────────────────────────────────────
-  # ⚙️  Celery Worker (tâches asynchrones)
-  # ─────────────────────────────────────────
-  celery:
-    build:
-      context: ./api
-      dockerfile: Dockerfile
-    container_name: fategrace_celery
-    restart: always
-    command: celery -A stock_management worker -l info
-    env_file:
-      - .env
-    environment:
-      DB_HOST: db
-      REDIS_HOST: redis
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - fategrace_net
-
-  # ─────────────────────────────────────────
-  # ⚛️  Frontend React (build statique)
+  # Frontend React 
   # ─────────────────────────────────────────
   frontend:
     build:
       context: ./front
       dockerfile: Dockerfile
     container_name: fategrace_frontend
-    # Le build génère les fichiers dans /app/build,
-    # copiés vers le volume partagé avec Nginx
+  
     volumes:
       - frontend_build:/app/build
     networks:
       - fategrace_net
 
   # ─────────────────────────────────────────
-  # 🌐 Nginx — Reverse proxy + fichiers statiques
+  # Nginx — Reverse proxy + fichiers statiques
   # ─────────────────────────────────────────
   nginx:
     image: nginx:alpine
@@ -144,7 +100,7 @@ services:
       - fategrace_net
 
 # ─────────────────────────────────────────
-# 📦 Volumes persistants
+# Volumes persistants
 # ─────────────────────────────────────────
 volumes:
   postgres_data:
@@ -153,7 +109,7 @@ volumes:
   frontend_build:
 
 # ─────────────────────────────────────────
-# 🔗 Réseau interne
+# Réseau interne
 # ─────────────────────────────────────────
 networks:
   fategrace_net:

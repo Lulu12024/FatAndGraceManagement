@@ -1,7 +1,3 @@
-# ─────────────────────────────────────────
-# Dockerfile — Backend Django
-# Plateforme Fate & Grâce
-# ─────────────────────────────────────────
 
 FROM python:3.11-slim
 
@@ -22,7 +18,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copier le code source
 COPY . .
 
 # Collecter les fichiers statiques
@@ -30,5 +25,3 @@ RUN python manage.py collectstatic --noinput || true
 
 # Exposer le port Gunicorn
 EXPOSE 8000
-
-# La commande est définie dans docker-compose.yml
