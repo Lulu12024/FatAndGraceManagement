@@ -386,13 +386,16 @@ class OrderViewSet(viewsets.ModelViewSet):
 
         data = serializer.validated_data
         table = Table.objects.get(id=data['table_id'])
+        pour_cuisinier = data.get('pour_cuisinier', True)
+
+        initial_status = 'EN_ATTENTE_ACCEPTATION' if pour_cuisinier else 'EN_ATTENTE_LIVRAISON'
 
         # Create the order
         commande = Commande.objects.create(
             table=table,
             serveur=request.user,
             observations=data.get('obs', ''),
-            statut='EN_ATTENTE_ACCEPTATION',
+            statut=initial_status,
         )
 
         # Add items
@@ -419,39 +422,40 @@ class OrderViewSet(viewsets.ModelViewSet):
         log_action(
             user=request.user, action='CREATE',
             type_action='Nouvelle commande',
-            description=f"Nouvelle commande {commande.order_id} — Table {table.numero}",
+            description=f"Nouvelle commande {commande.order_id} — Table {table.numero}{'' if pour_cuisinier else ' (Livraison directe)'}",
             table_name='commande', record_id=commande.id, request=request
         )
 
-        # Notify all cooks
-        from users.models import User
-        cuisiniers = User.objects.filter(role__nom='Cuisinier', is_activite=True)
-        items_text = ", ".join([
-            f"{item['qte']}× {Plat.objects.get(id=item['plat_id']).nom}"
-            for item in data['items']
-        ])
-        for cuisinier in cuisiniers:
-            Notification.objects.create(
-                user=cuisinier,
-                type='new_order',
-                message=f"Nouvelle commande : Table {table.numero} — {items_text}",
-                data={
-                    'order_id': commande.order_id,
-                    'table_id': table.id,
-                    'table_num': table.numero,
-                    'items': items_text,
-                    'montant': float(total),
-                }
-            )
+        # Notify all cooks only if order is for kitchen
+        if pour_cuisinier:
+            from users.models import User
+            cuisiniers = User.objects.filter(role__nom='Cuisinier', is_activite=True)
+            items_text = ", ".join([
+                f"{item['qte']}× {Plat.objects.get(id=item['plat_id']).nom}"
+                for item in data['items']
+            ])
+            for cuisinier in cuisiniers:
+                Notification.objects.create(
+                    user=cuisinier,
+                    type='new_order',
+                    message=f"Nouvelle commande : Table {table.numero} — {items_text}",
+                    data={
+                        'order_id': commande.order_id,
+                        'table_id': table.id,
+                        'table_num': table.numero,
+                        'items': items_text,
+                        'montant': float(total),
+                    }
+                )
 
-            # Push notification sur le téléphone du cuisinier ← ajouter ça
-            send_push_to_user(
-                cuisinier,
-                title="🍽️ Nouvelle commande",
-                body=f"Table {table.numero} — {items_text}",
-                url="/",
-                tag="new_order"
-            )
+                # Push notification sur le téléphone du cuisinier ← ajouter ça
+                send_push_to_user(
+                    cuisinier,
+                    title="🍽️ Nouvelle commande",
+                    body=f"Table {table.numero} — {items_text}",
+                    url="/",
+                    tag="new_order"
+                )
 
         return Response(
             OrderSerializer(commande).data,
@@ -742,7 +746,10 @@ class OrderViewSet(viewsets.ModelViewSet):
         role = user.role.nom
         # Permission logic
         if role == 'Serveur':
-            if commande.statut not in ['STOCKEE', 'EN_ATTENTE_ACCEPTATION']:
+            # Autorise le serveur à annuler s'il s'agit d'une commande classique non préparée
+            # OU s'il s'agit d'une commande directe (boissons) en attente de livraison
+            est_commande_directe = (commande.statut == 'EN_ATTENTE_LIVRAISON' and commande.cuisinier is None)
+            if commande.statut not in ['STOCKEE', 'EN_ATTENTE_ACCEPTATION'] and not est_commande_directe:
                 return Response(
                     {'detail': "Vous n'avez pas la permission d'annuler cette commande dans son état actuel"},
                     status=status.HTTP_403_FORBIDDEN
@@ -1039,7 +1046,7 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
             content = "\n".join(lines)
             response = HttpResponse(content, content_type='text/plain')
             response['Content-Disposition'] = f'attachment; filename="{facture.numero_facture}.txt"'
-            return responseSonnet 
+            return response
         
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsGerantOrAdmin])

@@ -110,6 +110,7 @@ class OrderCreateSerializer(serializers.Serializer):
     table_id = serializers.IntegerField()
     items = OrderItemInputSerializer(many=True)
     obs = serializers.CharField(required=False, default='', allow_blank=True)
+    pour_cuisinier = serializers.BooleanField(default=True, required=False)
 
     def validate_table_id(self, value):
         try:

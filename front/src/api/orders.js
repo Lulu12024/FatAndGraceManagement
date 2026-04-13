@@ -56,7 +56,7 @@ export const ordersService = {
 
   /** Créer une nouvelle commande */
   async create(payload) {
-    // payload: { table_id, items: [{plat_id, nom, qte, prix}], obs }
+    // payload: { table_id, items: [{plat_id, nom, qte, prix}], obs, pour_cuisinier }
     try {
       return await api.post("/orders/", payload);
     } catch (err) {
@@ -66,7 +66,7 @@ export const ordersService = {
           tableId: payload.table_id,
           tableNum: payload.table_num || "??",
           items: payload.items || [],
-          status: "EN_ATTENTE_ACCEPTATION",
+          status: payload.pour_cuisinier === false ? "EN_ATTENTE_LIVRAISON" : "EN_ATTENTE_ACCEPTATION",
           montant: 0,
           obs: payload.obs || "",
           createdAt: new Date().toISOString(),

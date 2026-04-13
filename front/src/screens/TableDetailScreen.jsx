@@ -12,6 +12,7 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
   const [showCancelM,      setShowCancelM]      = useState(null);
   const [newItems,         setNewItems]         = useState([]);
   const [obs,              setObs]              = useState("");
+  const [pourCuisinier,    setPourCuisinier]    = useState(true);
   const [motifCanc,        setMotifCanc]        = useState("");
   const [payMode,          setPayMode]          = useState("Espèces");
   const [pourboire,        setPourboire]        = useState("0");
@@ -112,6 +113,7 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
         table_id: table.id,
         items: newItems.map(i => ({ plat_id: i.platId, qte: i.qte })),
         obs,
+        pour_cuisinier: pourCuisinier,
       };
       const order = await ordersService.create(payload);
       setOrders(p => [...p, {
@@ -119,7 +121,7 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
         tableId: table.id,
         items: newItems,
         montant: newItems.reduce((s, i) => s + i.prix * i.qte, 0),
-        status: "EN_ATTENTE_ACCEPTATION",
+        status: pourCuisinier ? "EN_ATTENTE_ACCEPTATION" : "EN_ATTENTE_LIVRAISON",
         obs,
         createdAt: now(),
         created_at: new Date().toISOString(),
@@ -128,8 +130,9 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
         ? { ...t, status: ["DISPONIBLE","RESERVEE","RÉSERVÉE"].includes(t.status) ? "EN_SERVICE" : t.status }
         : t
       ));
-      setNewItems([]); setObs(""); setShowOrderForm(false);
-      toast.success("Commande envoyée", "Cuisiniers notifiés");
+      setNewItems([]); setObs(""); setPourCuisinier(true); setShowOrderForm(false);
+      const msgInfo = pourCuisinier ? "Cuisiniers notifiés" : "En attente de livraison";
+      toast.success("Commande envoyée", msgInfo);
     } catch(err) { handleApiError(err, toast); }
     finally { setLoading(false); }
   };
@@ -247,7 +250,8 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
     const isPaid       = IS_PAID(o.status);
     const isEnAttPaiem = o.status === "EN_ATTENTE_PAIEMENT";
     const isLivrable   = o.status === "EN_ATTENTE_LIVRAISON";
-    const isCancellable = ["STOCKEE","STOCKÉE","EN_ATTENTE_ACCEPTATION"].includes(o.status);
+    const isDirectOrder = o.status === "EN_ATTENTE_LIVRAISON" && (!o.cuisinier_id && !o.cuisinier);
+    const isCancellable = ["STOCKEE","STOCKÉE","EN_ATTENTE_ACCEPTATION"].includes(o.status) || isDirectOrder;
 
     return (
       <Card key={o.id} style={{ padding: 0, overflow: "hidden", opacity: isPaid ? 0.75 : 1 }}>
@@ -454,7 +458,7 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
           MODAL — Nouvelle commande
       ══════════════════════════════════════════════════════════════════ */}
       <Modal open={showOrderForm}
-        onClose={() => { setShowOrderForm(false); setNewItems([]); setObs(""); }}
+        onClose={() => { setShowOrderForm(false); setNewItems([]); setObs(""); setPourCuisinier(true); }}
         title="Nouvelle commande" width={560}>
         <div style={{ display:"flex", flexDirection:"column", gap: 18 }}>
 
@@ -588,12 +592,41 @@ const TableDetailScreen = ({ table, orders, setOrders, setTables, role, toast, p
           <Input label="Observations (optionnel)" value={obs} onChange={setObs}
             placeholder="Allergies, cuisson, sans sauce…" textarea/>
 
+          <div style={{
+            display: "flex", gap: 8, padding: "12px", borderRadius: 8,
+            background: C.bg2, border: `1px solid rgba(255,255,255,0.06)`,
+            alignItems: "center"
+          }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: 13, color: C.cream, fontWeight: 600 }}>Destination de la commande</div>
+              <div style={{ fontSize: 11, color: C.mutedL }}>Cuisine (à préparer) ou Direct (boissons, etc).</div>
+            </div>
+            <div style={{ display: "flex", gap: 8, background: C.bg3, padding: 4, borderRadius: 8 }}>
+              <button 
+                type="button"
+                onClick={() => setPourCuisinier(true)} style={{
+                padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
+                background: pourCuisinier ? C.goldFaint : "transparent",
+                color: pourCuisinier ? C.goldL : C.muted,
+                transition: "all 0.2s"
+              }}>🍳 Cuisine</button>
+              <button 
+                type="button"
+                onClick={() => setPourCuisinier(false)} style={{
+                padding: "6px 12px", borderRadius: 6, fontSize: 12, fontWeight: 600, cursor: "pointer", border: "none",
+                background: !pourCuisinier ? "rgba(100, 200, 255, 0.15)" : "transparent",
+                color: !pourCuisinier ? "#64c8ff" : C.muted,
+                transition: "all 0.2s"
+              }}>🍹 Direct</button>
+            </div>
+          </div>
+
           <div style={{ display:"flex", gap: 10, justifyContent:"flex-end" }}>
-            <Btn variant="ghost" onClick={() => { setShowOrderForm(false); setNewItems([]); setObs(""); }}>
+            <Btn variant="ghost" onClick={() => { setShowOrderForm(false); setNewItems([]); setObs(""); setPourCuisinier(true); }}>
               Annuler
             </Btn>
             <Btn variant="primary" loading={loading} onClick={submitOrder} disabled={!newItems.length}>
-              Envoyer aux cuisiniers →
+              {pourCuisinier ? "Envoyer aux cuisiniers →" : "Confirmer la commande (Direct) →"}
             </Btn>
           </div>
         </div>
