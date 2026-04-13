@@ -252,19 +252,23 @@ class Facture(models.Model):
         """Génère automatiquement un numéro de facture si absent"""
         if not self.numero_facture:
             from datetime import datetime
-            year = datetime.now().strftime('%Y')
+            now = datetime.now()
+            year = now.strftime('%Y')
+            month = now.strftime('%m')
+            prefix = f'BDC-{year}-{month}'
+
             last_facture = Facture.objects.filter(
-                numero_facture__startswith=f'BDC-{year}'
+                numero_facture__startswith=prefix
             ).order_by('-numero_facture').first()
-            
+
             if last_facture:
                 last_num = int(last_facture.numero_facture.split('-')[-1])
                 new_num = last_num + 1
             else:
                 new_num = 1
-            
-            self.numero_facture = f'BDC-{year}-{new_num:04d}'
-        
+
+            self.numero_facture = f'{prefix}-{new_num:03d}'
+
         super().save(*args, **kwargs)
 
 

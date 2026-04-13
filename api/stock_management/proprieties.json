@@ -1,18 +1,16 @@
 {
     "KEY": "django-insecure-%ckybrzgg-oms^kg2^m*3sp)zgjzrjeg18ww7h+5k5u0l8#3=w",
     "SALT": "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!#$%&'()*+,-./:;<=>?@[\\]^_`{|}~",
-    "NAME": "fate_and_grace_db",
-    "USER": "fate_and_grace_db_user",
-    "HOST": "dpg-d6n8p9rh46gs73c51uk0-a.oregon-postgres.render.com",
+    "NAME": "fate_and_grace_db_hd11",
+    "USER": "fate_and_grace_user",
+    "HOST": "dpg-d7ccemtckfvc73887q4g-a.oregon-postgres.render.com",
     "PORT": "5432",
-    "PASS": "uh036kvrjN0zjQWJFYsFrifzjz62S9Fl",
-    
-    
+    "PASS": "0e2ZQRJW0PYRQZ4xjDivEzKnxbeHUF9l",
+
     "JWT_ACCESS_TOKEN_LIFETIME": 60,
     "JWT_REFRESH_TOKEN_LIFETIME": 1440,
 
-    "REDIS_HOST": "localhost",
+    "REDIS_HOST": "redis",
     "REDIS_PORT": 6379,
     "ALLOWED_HOSTS": "*"
-
 }

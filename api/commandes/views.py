@@ -876,91 +876,172 @@ class InvoiceViewSet(viewsets.ReadOnlyModelViewSet):
 
     @action(detail=True, methods=['get'])
     def pdf(self, request, pk=None):
+        """
+        Génère un ticket thermique 80mm compact style caisse.
+        """
         facture = self.get_object()
         items = facture.items_snapshot or []
 
         try:
-            from reportlab.lib.pagesizes import A4
             from reportlab.pdfgen import canvas
+            from reportlab.lib.units import mm
             import os
             from django.conf import settings
 
-            logo_path = os.path.join(settings.BASE_DIR, 'stock_management', 'static', 'logo.jpg')
-            if not os.path.exists(logo_path):
-                logo_path = os.path.join(settings.BASE_DIR, 'stock_management', 'static', 'logo.jpg')
-            
+            logo_path = os.path.join(settings.BASE_DIR, 'stock_management', 'static', 'logo1.png')
+
+            # ── Dimensions ──────────────────────────────────────
+            TICKET_WIDTH = 80 * mm
+            MARGIN       = 4 * mm
+            LH           = 4 * mm
+
+            nb_lines = 20 + len(items) * 2 + (1 if facture.pourboire > 0 else 0)
+            height   = max(nb_lines * LH + 50 * mm, 120 * mm)
+
             buffer = io.BytesIO()
-            p = canvas.Canvas(buffer, pagesize=A4)
-            width, height = A4
+            p = canvas.Canvas(buffer, pagesize=(TICKET_WIDTH, height))
+            y = height - 6 * mm
 
-            # Header
-            p.drawImage(logo_path, 50, height - 90, width=50, height=50)
-            p.setFont("Helvetica-Bold", 18)
-            p.drawString(120, height - 50, f"BON DE COMMANDE {facture.numero_facture}")
+            # ── Helpers ─────────────────────────────────────────
+            def center(text, size=7, bold=False):
+                nonlocal y
+                p.setFont("Helvetica-Bold" if bold else "Helvetica", size)
+                p.drawCentredString(TICKET_WIDTH / 2, y, text)
+                y -= LH
 
-            # Infos sous le logo
-            p.setFont("Helvetica", 12)
-            p.drawString(120, height - 70, f"Date: {facture.date_generation.strftime('%d/%m/%Y %H:%M')}")
-            p.drawString(120, height - 90, f"Table: {facture.table.numero}")
+            def row(left, right, size=7, bold=False):
+                nonlocal y
+                p.setFont("Helvetica-Bold" if bold else "Helvetica", size)
+                p.drawString(MARGIN, y, left)
+                p.drawRightString(TICKET_WIDTH - MARGIN, y, right)
+                y -= LH
 
-            # Ligne de séparation
-            p.line(50, height - 105, width - 50, height - 105)
+            def sep():
+                nonlocal y
+                p.setFont("Helvetica", 6)
+                p.drawCentredString(TICKET_WIDTH / 2, y, "- " * 22)
+                y -= LH
 
-            # Colonnes — décaler y en conséquence
-            y = height - 130
+            def gap(factor=0.5):
+                nonlocal y
+                y -= LH * factor
 
-            p.setFont("Helvetica-Bold", 11)
-            p.drawString(50, y, "Article")
-            p.drawString(300, y, "Qté")
-            p.drawString(380, y, "Prix unit.")
-            p.drawString(480, y, "Total")
-            y -= 20
+            # ── LOGO ────────────────────────────────────────────
+            try:
+                logo_size = 16 * mm
+                p.drawImage(
+                    logo_path,
+                    TICKET_WIDTH / 2 - logo_size / 2, y - logo_size,
+                    width=logo_size, height=logo_size,
+                    preserveAspectRatio=True, mask='auto'
+                )
+                y -= logo_size + 1 * mm
+            except Exception:
+                pass
 
-            # Items depuis le snapshot
-            p.setFont("Helvetica", 10)
-            for item in items:
-                p.drawString(50, y, item['nom'])
-                p.drawString(300, y, str(item['qte']))
-                p.drawString(380, y, f"{item['prix']}")
-                p.drawString(480, y, f"{item['qte'] * item['prix']:.2f}")
-                y -= 18
+            # ── EN-TÊTE ─────────────────────────────────────────
+            center("FATE AND GRACE", size=10, bold=True)
+            center("Boulangerie · Pâtisserie · Restaurant", size=6)
+            gap()
+            sep()
+            center("IFU N° 0202327061497", size=6)
+            center("RCCM N° RB/ABC/25 A 129300", size=6)
+            sep()
+            gap(0.3)
 
-            # Totaux
-            y -= 10
-            p.setFont("Helvetica-Bold", 12)
-            p.drawString(380, y, f"Total: {facture.montant_total}")
-            if facture.pourboire > 0:
-                y -= 20
-                p.drawString(380, y, f"Pourboire: {facture.pourboire}")
-            y -= 20
-            p.drawString(380, y, f"Payé: {facture.montant_paye}")
-            y -= 20
-            p.drawString(50, y, f"Mode de paiement: {facture.get_mode_paiement_display()}")
+            # ── INFOS TICKET ────────────────────────────────────
+            center("TICKET DE COMMANDE", size=8, bold=True)
+            gap(0.3)
+            row("Ticket :", facture.numero_facture, size=7)
+            row("Table  :", facture.table.numero, size=7)
+            row("Date   :", facture.date_generation.strftime('%d/%m/%Y  %H:%M'), size=7)
             if facture.serveur:
-                y -= 20
-                p.drawString(50, y, f"Serveur: {facture.serveur.get_full_name()}")
+                row("Serveur:", facture.serveur.get_full_name(), size=7)
+            gap(0.3)
+            sep()
+
+            # ── ENTÊTE COLONNES ──────────────────────────────────
+            row("Qté  Article", "Prix", size=7, bold=True)
+            sep()
+
+            # ── ARTICLES ────────────────────────────────────────
+            for item in items:
+                nom   = item['nom'][:24]
+                qte   = item['qte']
+                prix  = float(item['prix'])
+                total = qte * prix
+
+                row(nom, f"{total:,.0f} FCFA", size=7)
+                p.setFont("Helvetica", 6)
+                p.drawString(MARGIN + 1 * mm, y, f"{qte}x {prix:,.0f} FCFA")
+                y -= LH * 0.9
+
+            gap(0.3)
+            sep()
+
+            # ── TOTAUX ──────────────────────────────────────────
+            row("Sous-total :", f"{facture.montant_total:,.0f} FCFA", size=7)
+
+            if facture.pourboire > 0:
+                row("Pourboire  :", f"{facture.pourboire:,.0f} FCFA", size=7)
+
+            sep()
+            row("TOTAL :", f"{facture.montant_paye:,.0f} FCFA", size=9, bold=True)
+            sep()
+            row("Paiement :", facture.get_mode_paiement_display(), size=7)
+            sep()
+
+            # ── PIED ────────────────────────────────────────────
+            gap(0.5)
+            center("MERCI DE VOTRE VISITE !", size=7, bold=True)
+            center("À bientôt !", size=6)
+            gap()
 
             p.showPage()
             p.save()
 
             buffer.seek(0)
             response = HttpResponse(buffer, content_type='application/pdf')
-            response['Content-Disposition'] = f'attachment; filename="{facture.numero_facture}.pdf"'
+            response['Content-Disposition'] = f'inline; filename="{facture.numero_facture}.pdf"'
             return response
 
         except ImportError:
-            # Fallback texte si reportlab non installé
-            content = f"FACTURE {facture.numero_facture}\n"
-            content += f"Date: {facture.date_generation.strftime('%d/%m/%Y %H:%M')}\n"
-            content += f"Table: {facture.table.numero}\n\n"
+            lines = []
+            lines.append(f"{'FATE AND GRACE':^42}")
+            lines.append(f"{'Patisserie - Restaurant':^42}")
+            lines.append(f"{'- ' * 21:^42}")
+            lines.append(f"{'IFU N 0202327061497':^42}")
+            lines.append(f"{'RCCM N RB/ABC/25 A 129300':^42}")
+            lines.append(f"{'- ' * 21:^42}")
+            lines.append(f"{'RECU DE VENTE':^42}")
+            lines.append(f"Ticket : {facture.numero_facture}")
+            lines.append(f"Table  : {facture.table.numero}")
+            lines.append(f"Date   : {facture.date_generation.strftime('%d/%m/%Y %H:%M')}")
+            if facture.serveur:
+                lines.append(f"Serveur: {facture.serveur.get_full_name()}")
+            lines.append(f"{'- ' * 21:^42}")
+            lines.append(f"{'Qte  Article':<30} {'Prix':>12}")
+            lines.append(f"{'- ' * 21:^42}")
             for item in items:
-                content += f"{item['nom']} × {item['qte']} — {item['prix']} FCFA\n"
-            content += f"\nTotal: {facture.montant_total} FCFA\n"
-            content += f"Mode paiement: {facture.get_mode_paiement_display()}\n"
+                total = item['qte'] * float(item['prix'])
+                lines.append(f"{item['nom'][:24]:<24} {total:>10,.0f} FCFA")
+                lines.append(f"  {item['qte']}x {float(item['prix']):,.0f} FCFA")
+            lines.append(f"{'- ' * 21:^42}")
+            lines.append(f"{'Sous-total :':<24} {facture.montant_total:>10,.0f} FCFA")
+            if facture.pourboire > 0:
+                lines.append(f"{'Pourboire  :':<24} {facture.pourboire:>10,.0f} FCFA")
+            lines.append(f"{'- ' * 21:^42}")
+            lines.append(f"{'TOTAL :':<24} {facture.montant_paye:>10,.0f} FCFA")
+            lines.append(f"{'- ' * 21:^42}")
+            lines.append(f"Paiement : {facture.get_mode_paiement_display()}")
+            lines.append(f"{'- ' * 21:^42}")
+            lines.append(f"{'MERCI DE VOTRE VISITE !':^42}")
+            content = "\n".join(lines)
             response = HttpResponse(content, content_type='text/plain')
             response['Content-Disposition'] = f'attachment; filename="{facture.numero_facture}.txt"'
-            return response
-    
+            return responseSonnet 
+        
+
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsGerantOrAdmin])
     def reprint(self, request, pk=None):
         facture = self.get_object()
