@@ -289,6 +289,26 @@ class ReportsViewSet(viewsets.ViewSet):
         else:
             return Response({'detail': "Type d'export invalide"}, status=status.HTTP_400_BAD_REQUEST)
 
+        # Enregistrement du rapport généré dans la base de données
+        from audit.models import Rapport
+
+        type_mapping = {
+            'orders': 'COMMANDES',
+            'stock': 'STOCKS',
+            'invoices': 'COMMANDES',
+            'movements': 'STOCKS',
+            'kpi': 'KPI'
+        }
+
+        periode_str = f"Du {date_from or 'Début'} au {date_to or 'Fin'}"
+        
+        Rapport.objects.create(
+            type=type_mapping.get(export_type, 'KPI'),
+            periode=periode_str,
+            contenu=f"Export de type '{export_type}' au format {export_format.upper()} comprenant {len(data)} lignes récupérées.",
+            genere_par=request.user
+        )
+
         # 2. Generate File
         if export_format == 'csv':
             output = io.StringIO()
@@ -351,5 +371,12 @@ class ReportsViewSet(viewsets.ViewSet):
                 return response
             except ImportError:
                 return Response({'detail': "La librairie 'reportlab' n'est pas installée"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        elif export_format == 'json':
+            return Response({
+                'filename': filename,
+                'headers': headers,
+                'data': data
+            })
 
         return Response({'detail': "Format d'export invalide"}, status=status.HTTP_400_BAD_REQUEST)

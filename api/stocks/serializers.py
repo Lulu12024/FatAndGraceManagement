@@ -121,6 +121,7 @@ class DemandeProduitSerializer(serializers.ModelSerializer):
     class Meta:
         model = DemandeProduit
         fields = [
-            'id', 'produit', 'produit_nom', 'quantite','statut', 'demandeur', 'date_demande'
+            'id', 'produit', 'produit_nom', 'quantite', 'justification',
+            'statut', 'demandeur', 'date_demande', 'commande'
         ]
         read_only_fields = ['id', 'statut', 'demandeur', 'date_demande']

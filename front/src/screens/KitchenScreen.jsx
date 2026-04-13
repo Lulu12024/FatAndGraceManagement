@@ -33,7 +33,7 @@ const KitchenScreen = ({
   const [filter, setFilter]         = useState("EN_ATTENTE_ACCEPTATION");
   const [rejectId, setRejectId]     = useState(null);
   const [motifRefus, setMotifRefus] = useState("");
-  const [stockReqId, setStockReqId] = useState(null);
+  const [stockReqId, setStockReqId] = useState(null);  // { display: "CMD-XXX", numId: 123 }
   const [stockItems, setStockItems] = useState([]);
   const [loading, setLoading]       = useState(false);
 
@@ -44,8 +44,9 @@ const KitchenScreen = ({
   );
   const countFor = (s) => orders.filter(o => o.status === s).length;
 
-  /* ── Bloque "Marquer prête" si au moins une demande stock est EN_ATTENTE ── */
-  const hasAnyPendingDemande = demandes?.some(d => d.statut === "EN_ATTENTE") ?? false;
+  /* ── Bloque "Marquer prête" UNIQUEMENT pour la commande qui a une demande stock EN_ATTENTE ── */
+  const hasPendingDemandeFor = (numId) =>
+    demandes?.some(d => d.commande === numId && d.statut === "EN_ATTENTE") ?? false;
 
   /* ── Accepter ── */
   const doAccept = async (numId) => {
@@ -77,7 +78,7 @@ const KitchenScreen = ({
 
   /* ── Marquer prête ── */
   const doReady = async (numId) => {
-    if (hasAnyPendingDemande) return; // garde supplémentaire
+    if (hasPendingDemandeFor(numId)) return; // garde : bloque uniquement si CETTE commande a une demande en attente
     setLoading(true);
     try {
       await ordersService.markReady(numId);
@@ -96,9 +97,10 @@ const KitchenScreen = ({
     try {
       for (const si of stockItems) {
         const nouvelle = await demandesService.create({
-          produit:  si.id,
-          quantite: si.qte,
-          motif:    `Commande ${stockReqId}`,
+          produit:       si.id,
+          quantite:      si.qte,
+          justification: `Commande ${stockReqId?.display ?? stockReqId}`,
+          commande:      stockReqId?.numId ?? null,
         });
         // Ajoute localement pour bloquer le bouton immédiatement
         if (setDemandes) setDemandes(prev => [...(prev ?? []), nouvelle]);
@@ -215,11 +217,13 @@ const KitchenScreen = ({
                     )}
 
                     {/* En préparation */}
-                    {o.status === "EN_PREPARATION" && (
+                    {o.status === "EN_PREPARATION" && (() => {
+                      const blocked = hasPendingDemandeFor(o.num_id);
+                      return (
                       <div style={{ display: "flex", flexDirection: "column", gap: 6, width: "100%" }}>
 
-                        {/* Bannière d'alerte si demande en attente */}
-                        {hasAnyPendingDemande && (
+                        {/* Bannière d'alerte si demande en attente pour CETTE commande */}
+                        {blocked && (
                           <div style={{
                             display: "flex", alignItems: "center", gap: 6,
                             background: "rgba(245,158,11,0.1)",
@@ -233,25 +237,26 @@ const KitchenScreen = ({
 
                         <div style={{ display: "flex", gap: 6 }}>
                           <Btn small loading={loading}
-                            disabled={hasAnyPendingDemande}
+                            disabled={blocked}
                             onClick={() => doReady(o.num_id)}
                             style={{
-                              background:  hasAnyPendingDemande ? "rgba(255,255,255,0.04)" : C.goldFaint,
-                              color:       hasAnyPendingDemande ? C.muted : C.goldL,
-                              border:      `1px solid ${hasAnyPendingDemande ? "rgba(255,255,255,0.08)" : C.goldBorder}`,
-                              cursor:      hasAnyPendingDemande ? "not-allowed" : "pointer",
-                              opacity:     hasAnyPendingDemande ? 0.55 : 1,
-                              pointerEvents: hasAnyPendingDemande ? "none" : "auto",
+                              background:    blocked ? "rgba(255,255,255,0.04)" : C.goldFaint,
+                              color:         blocked ? C.muted : C.goldL,
+                              border:        `1px solid ${blocked ? "rgba(255,255,255,0.08)" : C.goldBorder}`,
+                              cursor:        blocked ? "not-allowed" : "pointer",
+                              opacity:       blocked ? 0.55 : 1,
+                              pointerEvents: blocked ? "none" : "auto",
                             }}>
-                            {hasAnyPendingDemande ? "⏳ Stock en attente" : "✓ Marquer prête"}
+                            {blocked ? "⏳ Stock en attente" : "✓ Marquer prête"}
                           </Btn>
                           <Btn small variant="ghost"
-                            onClick={() => setStockReqId(o.id)}>
+                            onClick={() => setStockReqId({ display: o.id, numId: o.num_id })}>
                             📦 Demander stock
                           </Btn>
                         </div>
                       </div>
-                    )}
+                      );
+                    })()}
 
                     {/* Prête — attente serveur */}
                     {o.status === "EN_ATTENTE_LIVRAISON" && (

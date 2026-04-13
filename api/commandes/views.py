@@ -349,6 +349,14 @@ class OrderViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Commande.objects.select_related('table', 'serveur', 'cuisinier').all()
 
+        user = self.request.user
+        if user and user.is_authenticated:
+            role_nom = user.role.nom.lower() if hasattr(user, 'role') and user.role else ''
+            if 'serveur' in role_nom:
+                qs = qs.filter(serveur=user)
+            elif 'cuisinier' in role_nom:
+                qs = qs.filter(Q(statut='EN_ATTENTE_ACCEPTATION') | Q(cuisinier=user))
+
         # Apply filters from query params
         table_id = self.request.query_params.get('table_id')
         if table_id:
@@ -452,12 +460,7 @@ class OrderViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[IsAuthenticated, IsCuisinierOrAdmin])
     def accept(self, request, pk=None):
-        commande = self.get_object()
-        if commande.statut != 'EN_ATTENTE_ACCEPTATION':
-            return Response(
-                {'detail': "La commande n'est pas en attente d'acceptation"},
-                status=status.HTTP_422_UNPROCESSABLE_ENTITY
-            )
+        from django.db import transaction
 
         cuisinier_id = request.data.get('cuisinier_id')
         if cuisinier_id:
@@ -472,10 +475,19 @@ class OrderViewSet(viewsets.ModelViewSet):
         else:
             cuisinier = request.user
 
-        commande.statut = 'EN_PREPARATION'
-        commande.cuisinier = cuisinier
-        commande.date_acceptation = timezone.now()
-        commande.save()
+        with transaction.atomic():
+            # Lock the row to prevent two cooks from accepting simultaneously
+            commande = Commande.objects.select_for_update().get(pk=pk)
+            if commande.statut != 'EN_ATTENTE_ACCEPTATION':
+                return Response(
+                    {'detail': "Cette commande a déjà été prise en charge par un autre cuisinier."},
+                    status=status.HTTP_409_CONFLICT
+                )
+
+            commande.statut = 'EN_PREPARATION'
+            commande.cuisinier = cuisinier
+            commande.date_acceptation = timezone.now()
+            commande.save()
 
         log_action(
             user=request.user, action='APPROVE',

@@ -209,6 +209,7 @@ SPECTACULAR_SETTINGS = {
 # ]
 CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True  # Permettre toutes les origines (à restreindre en production)
+CORS_EXPOSE_HEADERS = ['Content-Disposition']
 # En mode DEBUG, autoriser toutes les origines pour faciliter les tests
 # if DEBUG:
 #     CORS_ALLOW_ALL_ORIGINS = True

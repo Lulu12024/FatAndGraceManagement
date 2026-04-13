@@ -2,14 +2,8 @@ import { C, ORDER_STATUS, fmt } from "../styles/tokens";
 import { Card, StatCard, Badge, Empty } from "../components/ui";
 
 const StatsScreen = ({ orders, user }) => {
-  /* Filtre sur les commandes du cuisinier connecté */
-  const fullName = user ? `${user.firstName} ${user.lastName}` : "";
-  const mine = orders.filter(o =>
-    o.cuisinier && (
-      o.cuisinier === fullName ||
-      o.cuisinier?.toLowerCase().includes(user?.firstName?.toLowerCase() ?? "")
-    )
-  );
+  /* Filtre sur les commandes du cuisinier connecté (le backend garantit déjà une liste restreinte) */
+  const mine = orders.filter(o => o.cuisinier_id === user?.id);
 
   const done  = mine.filter(o => ["LIVREE", "LIVRÉE"].includes(o.status)).length;
   const rate  = mine.length ? Math.round((done / mine.length) * 100) : 0;

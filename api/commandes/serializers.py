@@ -41,11 +41,12 @@ class OrderInTableSerializer(serializers.ModelSerializer):
     created_at = serializers.DateTimeField(source='date_commande', read_only=True)
 
     is_paid = serializers.BooleanField(read_only=True)
+    cuisinier_id = serializers.IntegerField(source='cuisinier.id', read_only=True, default=None, allow_null=True)
 
     class Meta:
         model = Commande
         fields = [
-            'id', 'table_id', 'num_id', 'table_num', 'serveur', 'cuisinier',
+            'id', 'table_id', 'num_id', 'table_num', 'serveur', 'cuisinier', 'cuisinier_id',
             'items', 'status', 'montant', 'obs', 'motif', 'is_paid', 'created_at'
         ]
 
@@ -74,6 +75,17 @@ class TableDetailSerializer(serializers.ModelSerializer):
         active_orders = obj.commandes.exclude(
             statut__in=['ANNULEE', 'REFUSEE']
         )
+        request = self.context.get('request')
+        if request and hasattr(request, 'user') and request.user.is_authenticated:
+            user = request.user
+            role_nom = user.role.nom.lower() if hasattr(user, 'role') and user.role else ''
+            
+            if 'serveur' in role_nom:
+                active_orders = active_orders.filter(serveur=user)
+            elif 'cuisinier' in role_nom:
+                from django.db.models import Q
+                active_orders = active_orders.filter(Q(statut='EN_ATTENTE_ACCEPTATION') | Q(cuisinier=user))
+                
         return OrderInTableSerializer(active_orders, many=True).data
 
 
@@ -144,11 +156,12 @@ class OrderSerializer(serializers.ModelSerializer):
     updated_at = serializers.SerializerMethodField()
 
     is_paid = serializers.BooleanField(read_only=True)
+    cuisinier_id = serializers.IntegerField(source='cuisinier.id', read_only=True, default=None, allow_null=True)
 
     class Meta:
         model = Commande
         fields = [
-            'id', 'table_id', 'num_id', 'table_num', 'serveur', 'cuisinier',
+            'id', 'table_id', 'num_id', 'table_num', 'serveur', 'cuisinier', 'cuisinier_id',
             'items', 'status', 'montant', 'obs', 'motif', 'is_paid',
             'created_at', 'updated_at'
         ]
